@@ -1,7 +1,7 @@
 <package>
   <name>asv_framework</name>
   <version>0.0.1</version>
-  <description>Stack</description>
+  <description>meta-package describing the asv ROS architecture.</description>
   <maintainer email="fletcher.thompson@utas.edu.au">Fletcher Thompson</maintainer>
 
   <license>BSD</license>

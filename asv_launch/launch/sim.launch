@@ -1,4 +1,9 @@
 <launch>
+<arg name="model" default="$(find asv_launch)/visualisation/asv.urdf"/>
+<arg name="gui" default="true"/>
+<param name="robot_description" command="$(find xacro)/xacro.py $(arg model)" />
+<param name="use_gui" value="$(arg gui)"/>
+<arg name="rviz_config" default="$(find asv_launch)/visualisation/asv-sim-test.rviz"/>
 
 <include file="$(find asv_launch)/launch/transforms.launch"/>
 
@@ -10,10 +15,13 @@
 
 <include file="$(find asv_launch)/launch/pid.launch"/>
 
+
 <node name="nav_sim" pkg="asv_control" type="nav_sim.py" output="screen">
     <remap from="wrench" to="/pose_controller/wrench"/>
 </node>
 
-<node name="rviz" pkg="rviz" type="rviz" args="-d /home/fft/.rviz/asv-sim-test.rviz" output="log"/>
+
+
+<node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rviz_config)" output="log"/>
 
 </launch>

@@ -15,24 +15,18 @@ mul = np.matmul
 class PoseControllerNode():
     """
     Node for controlling the pose (position and orientation) of a robot,
-    using a simple PID scheme. The input consists in a setpoint (required 
-    position) given as geometry_msgs/PoseStamped on topic 'pose_request' 
-    and of current odometry readings as nav_msgs/Odometry on topic 'odometry'.
-    Every degree of freedom has a separate PID. The pose values given in
-    the incoming odometry message are used as feedback for the PIDs.
+    using a simple PID scheme. 
+    ECEF positions X,Y,Z are converted to body fixed errors (dx,dy,dz).
+    These errors are inputted as the state for surge, sway, heave PIDs
+    (only surge, sway right now).
+    Euler angle of vessel is inputted as the state for roll, pitch,
+    yaw PIDs (only yaw right now).
+    Desired euler angles are the setpoint for rpy PIDs.
+    Setpoints for surge, sway, heave PIDs are always 0.
     Output is a message of type geometry_msgs/WrenchStamped on topic 
     'wrench' containing force and torque values that are
-    necessary to maintain the position..
+    necessary to maintain the position.
     """
-
-    #TODO:  1.  Listen for /odometry and /move_base_simple/goal
-    #       2.  Calculate dX, dY, dZ
-    #       3.  Use orientation to transform dX, dY, dZ to dx, dy, dz
-    #       4.  Feed dx, dy, dz as state input to surge, sway, heave, controllers
-    #       5.  Setpoints for surge, sway, heave controllers is 0
-    #       6.  State inputs for roll, pitch, yaw controllers are /odometry
-    #       7.  Setpoints for roll, pitch, yaw controllers are from /move_base_simple/goal
-
 
     def __init__(self, frequency):
         self.setpoint_valid = False
@@ -182,4 +176,3 @@ if __name__ == "__main__":
         rospy.spin()
     except rospy.ROSInterruptException:
         pass
-
