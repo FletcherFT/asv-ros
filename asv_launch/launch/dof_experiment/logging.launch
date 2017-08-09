@@ -1,0 +1,3 @@
+<launch>
+    <machine name="rpi" address="asv-rpi" env-loader="/root/env.sh" user="root" password="ubuntu"/>
+</launch>

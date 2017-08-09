@@ -1,0 +1,19 @@
+<launch>
+
+<include file="$(find asv_launch)/launch/transforms.launch"/>
+
+<node name="pose_controller" pkg="asv_control" type="hold_position.py" output="screen">
+    <remap from="~wrench_output" to="wrench"/>
+    <remap from="~pose_request" to="/move_base_simple/goal"/>
+
+</node>
+
+<include file="$(find asv_launch)/launch/pid.launch"/>
+
+<node name="nav_sim" pkg="asv_control" type="nav_sim.py" output="screen">
+    <remap from="wrench" to="/pose_controller/wrench"/>
+</node>
+
+<node name="rviz" pkg="rviz" type="rviz" args="-d /home/fft/.rviz/asv-sim-test.rviz" output="log"/>
+
+</launch>

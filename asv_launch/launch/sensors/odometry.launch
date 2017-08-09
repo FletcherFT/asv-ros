@@ -1,0 +1,9 @@
+<launch>
+
+<include file="$(find asv_launch)/launch/rpi/rpi.launch"/>
+
+<include file="$(find asv_launch)/launch/sensors/imu.launch"/>
+
+<include file="$(find asv_launch)/launch/sensors/ekf_fusion.launch"/>
+
+</launch>

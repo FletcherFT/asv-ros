@@ -1,0 +1,3 @@
+<launch>
+    <node name="ardu_serial" pkg="asv_launch" type="ardu_serial.py" output="screen"/>
+</launch>

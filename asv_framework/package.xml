@@ -1,0 +1,21 @@
+<package>
+  <name>asv_framework</name>
+  <version>0.0.1</version>
+  <description>Stack</description>
+  <maintainer email="fletcher.thompson@utas.edu.au">Fletcher Thompson</maintainer>
+
+  <license>BSD</license>
+
+  <author email="fletcher.thompson@utas.edu.au">Fletcher Thompson</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <run_depend>asv_launch</run_depend>
+  <run_depend>asv_rc</run_depend>
+  <run_depend>asv_navigation</run_depend>
+  <run_depend>asv_control</run_depend>
+  <run_depend>asv_control_msgs</run_depend>
+
+  <export>
+    <metapackage/>
+  </export>
+</package>

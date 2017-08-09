@@ -1,0 +1,5 @@
+<launch>
+    <arg name="imu_base" default="0 0 0 0 0 0"/>
+    <node name="imu_base" pkg="tf" type="static_transform_publisher" args="$(arg imu_base) base_link imu_link 20"/>
+    <node pkg="asv_launch" type="imu_driver.py" name="imu" output="screen"/>
+</launch>

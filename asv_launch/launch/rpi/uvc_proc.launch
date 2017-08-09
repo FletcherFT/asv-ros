@@ -1,0 +1,17 @@
+<launch>
+    <arg name="stereo_ns" default="/stereo_camera"/>
+    <arg name="disparity_range" default="64"/>
+    <arg name="correlation_window_size" default="20"/>
+    <arg name="speckle_size" default="1000"/>
+    <arg name="speckle_range" default="5"/>
+    <machine name="rpi" address="rpi" env-loader="/root/env.sh" user="root" password="ubuntu"/>
+    <group ns="$(arg stereo_ns)">
+        <node machine="rpi" pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc">
+            <param name="approximate_sync" value="true"/>
+            <param name="disparity_range" value="$(arg disparity_range)"/>
+            <param name="speckle_size" value="$(arg speckle_size)"/>
+            <param name="speckle_range" value="$(arg speckle_range)"/>
+            <param name="correlation_window_size" value="$(arg correlation_window_size)"/>
+        </node>
+    </group>
+</launch>

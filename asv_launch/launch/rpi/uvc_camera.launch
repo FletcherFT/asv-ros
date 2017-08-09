@@ -1,0 +1,11 @@
+<launch>
+
+<arg name="params_file" default="params-minoru.yaml"/>
+<machine name="rpi" address="10.42.0.3" env-loader="/root/env.sh" user="root" password="ubuntu"/>
+
+<node ns="stereo" machine="rpi" name="uvc_camera" pkg="uvc_camera" type="uvc_stereo_node" output="screen">
+    <rosparam command="load" file="$(find asv_launch)/params/$(arg params_file)"/>
+</node>
+<node machine="rpi" name="logger_ctl" pkg="asv_launch" type="logger_ctl.py" output="screen" />
+
+</launch>

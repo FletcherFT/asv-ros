@@ -1,0 +1,33 @@
+<launch>
+    <arg name="stereo_ns" default="/stereo_camera"/>
+    <arg name="left_video_device" default="/dev/video1"/>
+    <arg name="right_video_device" default="/dev/video0"/>
+    <arg name="fps" default="5"/>
+    <arg name="width" default="320"/>
+    <arg name="height" default="240"/>
+
+    <arg name="frame_id" default="minoru"/>
+    <arg name="pi/2" value="1.5707963267948966" />
+    <arg name="optical_tf" value="0 0 0 -$(arg pi/2) 0 -$(arg pi/2)" />
+
+    <machine name="rpi" address="rpi" env-loader="/root/env.sh" user="root" password="ubuntu"/>
+
+    <group ns="$(arg stereo_ns)">
+        <node machine="rpi" pkg="uvc_camera" type="uvc_stereo_node" name="uvc_camera_stereo">
+
+            <param name="width" type="int" value="$(arg width)" />
+            <param name="height" type="int" value="$(arg height)" />
+            <param name="fps" type="int" value="$(arg fps)" />
+            <param name="frame_id" type="string" value="$(arg frame_id)" />
+
+            <!-- other supported params: auto_exposure, exposure_absolute, brightness, power_line_frequency -->
+
+            <param name="left/device" type="string" value="$(arg left_video_device)" />
+            <param name="right/device" type="string" value="$(arg right_video_device)" />
+            <param name="left/camera_info_url" type="string" value="file:///root/.ros/camera_info/res$(arg width)x$(arg height)/minoru_left.yaml" />
+            <param name="right/camera_info_url" type="string" value="file:///root/.ros/camera_info/res$(arg width)x$(arg height)/minoru_right.yaml" />
+
+        </node>
+    </group>
+    <node machine="rpi" name="cam_tf" pkg="tf" type="static_transform_publisher" args="$(arg optical_tf) base_link $(arg frame_id) 67"/>
+</launch>

@@ -1,0 +1,10 @@
+<launch>
+    <include file="$(find asv_launch)/launch/rpi/uvc_driver.launch"/>
+    <include file="$(find asv_launch)/launch/rpi/uvc_proc.launch"/>
+    <include file="$(find asv_launch)/launch/rpi/stereo_mapping.launch"/>
+<!--
+    <node machine="rpi" pkg="asv_launch" type="vis_odom_monitor.py" name="vo_mon">
+        <remap from="/rtabmap/odom" to="/stereo_camera/odom"/>
+    </node>
+-->
+</launch>

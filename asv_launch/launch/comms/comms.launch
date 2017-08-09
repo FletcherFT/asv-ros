@@ -1,0 +1,16 @@
+<launch>
+
+    <arg name="terminal" default="false"/>
+
+    <arg name="term_remap" default="term_msg"/>
+
+    <include file="$(find asv_launch)/launch/comms/xbee_serial.launch"/>
+
+    <include file="$(find asv_launch)/launch/comms/ardu_serial.launch"/>
+
+    <node if="$(arg terminal)" pkg="asv_launch" type="terminal.py" name="terminal" required="true">
+        <remap from="term_msg" to="$(arg term_remap)"/>
+    </node>
+
+</launch>
+
