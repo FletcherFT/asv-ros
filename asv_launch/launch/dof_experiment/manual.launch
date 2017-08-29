@@ -1,5 +1,0 @@
-<launch>
-    <include file="$(find asv_launch)/launch/sensors/imu.launch"/>
-    <include file="$(find asv_launch)/launch/comms/xbee_serial.launch"/>
-    <include file="$(find asv_launch)/launch/comms/ardu_serial.launch"/>
-</launch>

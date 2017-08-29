@@ -1,12 +1,8 @@
 #!/usr/bin/python
-
-PACKAGE = 'auv_control'
-
-import roslib; roslib.load_manifest(PACKAGE)
 import rospy
 import dynamic_reconfigure.server
-import auv_control_msgs.srv
-from auv_control.cfg import TwistControllerConfig
+import asv_control_msgs.srv
+from asv_control.cfg import TwistControllerConfig
 from pid import Pid
 from geometry_msgs.msg import WrenchStamped
 from geometry_msgs.msg import TwistStamped
@@ -31,21 +27,21 @@ class TwistControllerNode():
         self.feedback_received = False
         self.enabled = False
         self.last_feedback = Odometry()
-        self.enable_server = rospy.Service('~enable', auv_control_msgs.srv.EnableControl, self.enable)
+        self.enable_server = rospy.Service('~enable', asv_control_msgs.srv.EnableControl, self.enable)
         self.pids = []
         for i in range(6):
             self.pids.append(Pid(0.0, 0.0, 0.0))
         self.server = dynamic_reconfigure.server.Server(TwistControllerConfig, self.reconfigure)
         
-        self.pub = rospy.Publisher('~wrench_output', WrenchStamped)
+        self.pub = rospy.Publisher('~wrench_commanded', WrenchStamped, queue_size=1)
         rospy.Subscriber('~twist_request', TwistStamped, self.setpointCallback)
         
         period = rospy.rostime.Duration.from_sec(1.0/frequency)
         self.timer = rospy.Timer(period, self.updateOutput)
         
         rospy.Subscriber('odometry', Odometry, self.odometryCallback)
-        rospy.loginfo('Listening for altitude feedback to be published on '
-                      '%s...', rospy.resolve_name('altitude'))
+        rospy.loginfo('Listening for twist feedback to be published on '
+                      '%s...', rospy.resolve_name('odometry'))
         rospy.loginfo('Waiting for setpoint to be published on '
                       '%s...', rospy.resolve_name('~twist_request'))
 
@@ -54,7 +50,7 @@ class TwistControllerNode():
         Handles ROS service requests for enabling/disabling control.
         Returns current enabled status and setpoint.
         """
-        response = auv_control_msgs.srv.EnableControlResponse()
+        response = asv_control_msgs.srv.EnableControlResponse()
         if request.enable:
             if self.isFeedbackValid():
                 self.enabled = True
@@ -103,8 +99,9 @@ class TwistControllerNode():
         if not self.setpoint_valid:
             rospy.loginfo("First setpoint received.")
             self.setpoint_valid = True
-        setSetpoint(setpoint.twist.twist)
-        rospy.loginfo('Changed setpoint to: %s', setpoint.twist.twist)
+        self.setSetpoint(setpoint.twist)
+        if not self.enabled:
+            rospy.logwarn("PIDs not enabled, please call /twist_controller/enable service")
 
     def setSetpoint(self, twist):
         self.pids[0].setSetpoint(twist.linear.x)
@@ -136,6 +133,7 @@ class TwistControllerNode():
            else:
                rospy.logwarn("Odometry feedback is invalid, setting wrench to zero.")
            wrench_output.header.stamp = rospy.Time.now()
+           wrench_output.header.frame_id = 'base_link'
            self.pub.publish(wrench_output)
 
 if __name__ == "__main__":

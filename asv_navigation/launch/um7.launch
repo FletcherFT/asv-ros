@@ -1,0 +1,15 @@
+<?xml version="v1.0"?>
+<launch>
+    <arg name="port" default="/dev/ttyUSB0"/>
+    <arg name="mag_updates" default="true"/>
+    <arg name="covariance" default="-1 0 0 0 0 0 0 0 0"/>
+    <node name="um7_driver" pkg="um7" type="um7_driver" output="screen">
+        <param name="port" value="$(arg port)"/>
+        <param name="baud" value="115200"/>
+        <param name="frame_id" value="imu_link"/>
+        <param name="mag_updates" value="$(arg mag_updates)"/>
+        <param name="quat_mode" value="true"/>
+        <param name="zero_gyros" value="true"/>
+        <param name="covariance" value="$(arg covariance)"/>
+    </node>
+</launch>

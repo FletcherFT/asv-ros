@@ -7,7 +7,6 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   asv_control_msgs
   dynamic_reconfigure
-  driver_base
   std_srvs
 )
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -27,8 +26,6 @@ find_package(catkin REQUIRED COMPONENTS
 #   DEPENDENCIES
 #   std_msgs
 # )
-
-
 
 # Generate dynamic reconfigure parameters in the 'cfg' folder
  generate_dynamic_reconfigure_options(

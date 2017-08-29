@@ -7,21 +7,27 @@
 
 <include file="$(find asv_launch)/launch/transforms.launch"/>
 
-<node name="pose_controller" pkg="asv_control" type="hold_position.py" output="screen">
-    <remap from="~wrench_output" to="wrench"/>
+<node name="pose_controller" pkg="asv_control" type="pose_controller.py" output="screen">
     <remap from="~pose_request" to="/move_base_simple/goal"/>
-
+    <rosparam command="load" file="$(find asv_control)/params/pose_settings.yaml"/>
 </node>
 
-<include file="$(find asv_launch)/launch/pid.launch"/>
+<node name="twist_controller" pkg="asv_control" type="twist_controller.py" output="screen">
+    <remap from="~twist_request" to="/pose_controller/twist_commanded"/>
+    <rosparam command="load" file="$(find asv_control)/params/twist_settings.yaml"/>
+</node>
 
+<node name="thruster_allocator" pkg="asv_control" type="thruster_allocator.py" output="screen">
+    <remap from="wrench_commanded" to="/twist_controller/wrench_commanded"/>
+    <rosparam command="load" file="$(find asv_control)/params/tam.yaml"/>
+</node>
 
 <node name="nav_sim" pkg="asv_control" type="nav_sim.py" output="screen">
-    <remap from="wrench" to="/pose_controller/wrench"/>
+    <remap from="wrench" to="/wrench_achieved"/>
 </node>
 
+<node name="dynamic_reconfigure" pkg="rqt_gui" type="rqt_gui" args="-s reconfigure"/>
 
-
-<node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rviz_config)" output="log"/>
+<node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rviz_config)" output="log" respawn="true"/>
 
 </launch>

@@ -110,7 +110,7 @@ Visualization Manager:
     - Alpha: 1
       Arrow Width: 0.5
       Class: rviz/WrenchStamped
-      Enabled: false
+      Enabled: true
       Force Arrow Scale: 2
       Force Color: 204; 51; 51
       History Length: 1
@@ -119,7 +119,7 @@ Visualization Manager:
       Torque Arrow Scale: 2
       Torque Color: 204; 204; 51
       Unreliable: false
-      Value: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -143,23 +143,23 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Class: rviz/Orbit
-      Distance: 29.3343
+      Class: rviz/ThirdPersonFollower
+      Distance: 13.6004
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.719419
-        Y: -0.333798
-        Z: -0.153643
+        X: 1.46165
+        Y: 3.22889
+        Z: 0
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.905398
-      Target Frame: <Fixed Frame>
-      Value: Orbit (rviz)
-      Yaw: 1.3604
+      Pitch: 0.885398
+      Target Frame: base_link
+      Value: ThirdPersonFollower (rviz)
+      Yaw: 1.3654
     Saved: ~
 Window Geometry:
   Displays:
