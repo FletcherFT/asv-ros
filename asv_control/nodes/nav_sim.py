@@ -35,7 +35,7 @@ class NavSimNode():
 
         #velocity terms
         #coriolis and centripetal matrix due to inertia (this is a function of the inertial matrix and velocity)
-        self.C_cori = np.zeros([6,6])
+        self.C_iner = np.zeros([6,6])
         #coriolis and centripetal matrix due to added mass (this is a function of the added mass matrix and vel)
         self.C_addm = np.zeros([6,6])
         #total damping matrix (potential + skin + wave damping coefficients)
@@ -94,18 +94,19 @@ class NavSimNode():
         self.tau[5] = wrench.wrench.torque.z
 
         #update the coriolis matrix from the old velocity
-        self.C_cori = fossen.m2c(self.M,self.v)
+        self.C_iner = fossen.m2c(self.M_iner,self.v)
         #update the added mas matrix from the old velocity
-        self.C_addm = fossen.m2c(self.M,self.v)
+        self.C_addm = fossen.m2c(self.M_addm,self.v)
         #update Gvector from old position TODO:  see fossen.gvect for what needs to be calculated
         #self.G = fossen.gvect(
 
     def kinematics(self,event):
         #consolidate velocity and acceleration terms
         M = self.M_iner+self.M_addm
-        C = self.C_damp + self.C_cori + self.D
+        C = self.C_addm + self.C_iner + self.D
+        G = self.G
         #calculate the fixed acceleration (based off old velocity and position)
-        self.a = mul(inv(M),tau-mul(C,self.v)-mul(G,self.p)
+        self.a = mul(inv(M),self.tau-mul(C,self.v)-mul(G,self.p))
 
         #calculate the time interval
         dt = self.period.to_sec()
