@@ -62,6 +62,8 @@ class ThrusterAllocationNode():
             a0 = []
             #number of thrusters
             n = t['n']
+            #largest thrust possible
+            fmax = 0.
             for i in range(n):
                 #K matrix components
                 k.append(t['kcoeff'][i])
@@ -72,7 +74,7 @@ class ThrusterAllocationNode():
                 #initialising the thrust vector
                 f0.append(0.)
                 #initialising the previous angle vector
-                a0.append(radians(t['initalpha'][i])) 
+                a0.append(radians(t['alpha0'][i]))
             self.K = np.diag(k)
             self.P = np.diag(power+omega+Q)
             #build the G matrix (this never changes)
@@ -172,8 +174,6 @@ class ThrusterAllocationNode():
         tau.append(wrench_com_msg.wrench.torque.z)
         #update the required tau
         self.tau=np.array(tau)
-        #if the error between commanded and previous wrench is > 0.01
-        #if np.any(abs(self.tau-self.tsol)>0.01):
         #organise into QP standard form
         q,h,A,b = self.update(None)
         try:
