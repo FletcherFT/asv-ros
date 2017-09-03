@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="model" default="$(find asv_launch)/visualisation/asv.urdf"/>
+    <arg name="gui" default="true"/>
+    <param name="robot_description" command="$(find xacro)/xacro.py $(arg model)" />
+    <param name="use_gui" value="$(arg gui)"/>
+    <arg name="rviz_config" default="$(find asv_launch)/visualisation/twist-test.rviz"/>
+
+    <!-- Transforms from Earth -> Map, Map -> Odom -->
+    <include file="$(find asv_launch)/launch/transforms.launch"/>
+
+    <!-- Twist controller (outputs wrench commands to thrust allocator -->
+    <node name="twist_controller" pkg="asv_control" type="hold_speed.py" output="screen">
+        <remap from="~twist_request" to="/twist_commanded"/>
+        <rosparam command="load" file="$(find asv_control)/params/pid_settings.yaml"/>
+    </node>
+
+    <!-- Plant simulation (inputs achieved wrench, outputs pose + twist) -->
+    <node name="nav_sim" pkg="asv_control" type="nav_sim.py" output="screen">
+        <remap from="wrench" to="/wrench_commanded"/>
+    </node>
+
+    <!-- For reconfiguration of PIDs -->
+    <node name="dynamic_reconfigure" pkg="rqt_gui" type="rqt_gui" args="-s reconfigure"/>
+
+    <!-- For visualisation of Vehicles -->
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rviz_config)" output="log"/>
+
+</launch>

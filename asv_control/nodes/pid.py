@@ -8,10 +8,11 @@ class Pid:
     """
     Discrete PID control
     """
-    def __init__(self, k_p, k_i, k_d, integral_min = -10, integral_max = 10):
+    def __init__(self, k_p, k_i, k_d, integral_min = -10, integral_max = 10, output_max=None):
         self.k_p = k_p
         self.k_i = k_i
         self.k_d = k_d
+        self.output_max = output_max
         self.__setpoint = 0.0
         self.__integral = 0.0
         self.__previous_error = 0.0
@@ -36,6 +37,12 @@ class Pid:
             derivative = 0.0
         self.__previous_error = error
         output = self.k_p * error + self.k_i * self.__integral + self.k_d * derivative
+        #limit pid
+        if not self.output_max is None:
+            if output > self.output_max:
+                output = self.output_max
+            if output < -self.output_max:
+                output = -self.output_max
         return output
 
     def setSetpoint(self, setpoint):

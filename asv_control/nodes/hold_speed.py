@@ -9,18 +9,16 @@ from geometry_msgs.msg import TwistStamped
 from nav_msgs.msg import Odometry
 
 class TwistControllerNode():
-    """
-    Node for controlling the twist (linear and angular speed) of a robot,
-    using a simple PID scheme. The input consists in a setpoint (required speed)
-    given as geometry_msgs/TwistStamped on topic 'twist_request' and of
-    current odometry readings as nav_msgs/Odometry on topic 'odometry'.
-    Every degree of freedom has a separate PID.
-    The velocity values given in the incoming odometry message are used as
-    feedback for the PIDs.
-    Output is a message of type geometry_msgs/WrenchStamped on topic 
-    'wrench' containing force and torque values that are
-    necessary to obtain the requested speed.
-    """
+    #Node for controlling the twist (linear and angular speed) of a robot,
+    #using a simple PID scheme. The input consists in a setpoint (required speed)
+    #given as geometry_msgs/TwistStamped on topic 'twist_request' and of
+    #current odometry readings as nav_msgs/Odometry on topic 'odometry'.
+    #Every degree of freedom has a separate PID.
+    #The velocity values given in the incoming odometry message are used as
+    #feedback for the PIDs.
+    #Output is a message of type geometry_msgs/WrenchStamped on topic 
+    #'wrench' containing force and torque values that are
+    #necessary to obtain the requested speed.
     def __init__(self, frequency):
         self.FEEDBACK_TIMEOUT = 1.0
         self.setpoint_valid = False
@@ -30,10 +28,10 @@ class TwistControllerNode():
         self.enable_server = rospy.Service('~enable', asv_control_msgs.srv.EnableControl, self.enable)
         self.pids = []
         for i in range(6):
-            self.pids.append(Pid(0.0, 0.0, 0.0))
+            self.pids.append(Pid(0.0, 0.0, 0.0,integral_min=-0.1,integral_max=0.1,output_max=1.))
         self.server = dynamic_reconfigure.server.Server(TwistControllerConfig, self.reconfigure)
         
-        self.pub = rospy.Publisher('~wrench_commanded', WrenchStamped, queue_size=1)
+        self.pub = rospy.Publisher('/wrench_commanded', WrenchStamped, queue_size=1)
         rospy.Subscriber('~twist_request', TwistStamped, self.setpointCallback)
         
         period = rospy.rostime.Duration.from_sec(1.0/frequency)
@@ -46,10 +44,8 @@ class TwistControllerNode():
                       '%s...', rospy.resolve_name('~twist_request'))
 
     def enable(self, request):
-        """
-        Handles ROS service requests for enabling/disabling control.
-        Returns current enabled status and setpoint.
-        """
+        #Handles ROS service requests for enabling/disabling control.
+        #Returns current enabled status and setpoint.
         response = asv_control_msgs.srv.EnableControlResponse()
         if request.enable:
             if self.isFeedbackValid():
@@ -87,9 +83,6 @@ class TwistControllerNode():
         self.pids[5].k_p = config['angular_z_Kp']
         self.pids[5].k_i = config['angular_z_Ki']
         self.pids[5].k_d = config['angular_z_Kd']
-
-#        rospy.loginfo("Reconfigured to (Kp, Ki, Kd, Kf) = (%f, %f, %f, %f)", 
-#                self.pid.k_p, self.pid.k_i, self.pid.k_d, self.k_f)
         return config # Returns the updated configuration.
     
     def setpointCallback(self,setpoint):
@@ -139,7 +132,7 @@ class TwistControllerNode():
 if __name__ == "__main__":
     rospy.init_node('twist_controller')
     try:
-        frequency = rospy.get_param("~frequency", 10.0)
+        frequency = rospy.get_param("~frequency", 400.0)
         rospy.loginfo('Starting twist control with %f Hz.\n', frequency)
         node = TwistControllerNode(frequency)
         rospy.spin()

@@ -51,6 +51,8 @@ class NavSimNode():
 
         #position terms
         self.G = np.zeros(6)
+        self.B = 150.
+        self.W = -150.
         self.p = np.zeros(6)
 
         #external force terms
@@ -61,7 +63,7 @@ class NavSimNode():
         rospy.Subscriber('initialpose',PoseWithCovarianceStamped,self.setCallback)
         self.odom_pub = rospy.Publisher('odometry', Odometry, queue_size=1)
         self.odom_broadcaster = tf.TransformBroadcaster()
-        frequency = 10.0
+        frequency = 400.0
         if rospy.has_param('frequency'):
             frequency = rospy.get_param('frequency')
         self.period = rospy.rostime.Duration.from_sec(1.0/frequency)
@@ -98,7 +100,7 @@ class NavSimNode():
         #update the added mas matrix from the old velocity
         self.C_addm = fossen.m2c(self.M_addm,self.v)
         #update Gvector from old position TODO:  see fossen.gvect for what needs to be calculated
-        #self.G = fossen.gvect(
+#        self.G = fossen.gvect(self.W,self.B,self.p[1],self.p[0],(0.,0.,0.),(0.1,0.0,-0.05))
 
     def kinematics(self,event):
         #consolidate velocity and acceleration terms

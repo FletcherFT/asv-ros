@@ -26,9 +26,11 @@ def gvect(W,B,theta,phi,r_g,r_b):
     cth = cos(theta)
     sphi = sin(phi)
     cphi = cos(phi)
-    return np.array([-(W-B)*sth,
-                    (W-B)*cth*sphi,
-                    (W-B)*cth*cphi,
-(r_g[1]*W-r_b[1]*B)*cth*cphi-(r_g[2]*W-r_b[2]*B)*cth*sph,
--(r_g[2]*W-r_b[2]*B)*sth-(r_g[0]*W-r_b[0]*B)*cth*cphi,
-(r_g[0]*W-r_b[0]*B)*cth*sphi-(r_g[1]*W-r_b[1]*B)*sth])
+    return np.array([
+            -(W-B)*sth,
+            (W-B)*cth*sphi,
+            (W-B)*cth*cphi,
+            (r_g[1]*W-r_b[1]*B)*cth*cphi-(r_g[2]*W-r_b[2]*B)*cth*sphi,
+            -(r_g[2]*W-r_b[2]*B)*sth-(r_g[0]*W-r_b[0]*B)*cth*cphi,
+            (r_g[0]*W-r_b[0]*B)*cth*sphi-(r_g[1]*W-r_b[1]*B)*sth
+            ])

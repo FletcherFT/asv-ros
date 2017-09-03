@@ -5,7 +5,7 @@ import asv_control_msgs.srv
 from asv_control.cfg import PoseControllerConfig
 from tf import transformations as transform
 from pid import Pid
-from geometry_msgs.msg import TwistStamped
+from geometry_msgs.msg import WrenchStamped
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
 from math import pi
@@ -13,17 +13,16 @@ import numpy as np
 mul=np.matmul
 
 class PoseControllerNode():
-    """
-    Node for controlling the pose (position and orientation) of a robot,
-    using a simple PID scheme. The input consists in a setpoint (required 
-    position) given as geometry_msgs/PoseStamped on topic '~pose_request' 
-    and of current odometry readings as nav_msgs/Odometry on topic 'odometry'.
-    Every degree of freedom has a separate PID. The pose values given in
-    the incoming odometry message are used as feedback for the PIDs.
-    Output is a message of type geometry_msgs/TwistStamped on topic 
-    '~twist_commanded' containing linear and angular velocity values that are
-    necessary to maintain the position..
-    """
+    #Node for controlling the pose (position and orientation) of a robot,
+    #using a simple PID scheme. The input consists in a setpoint (required 
+    #position) given as geometry_msgs/PoseStamped on topic '~pose_request' 
+    #and of current odometry readings as nav_msgs/Odometry on topic 'odometry'.
+    #Every degree of freedom has a separate PID. The pose values given in
+    #the incoming odometry message are used as feedback for the PIDs.
+    #Output is a message of type geometry_msgs/WrenchStamped on topic 
+    #'~wrench_commanded' containing force and torque values that are
+    #necessary to maintain the position..
+
     def __init__(self, frequency):
         self.P = [0.0,0.0,0.0,0.0,0.0,0.0]
         self.FEEDBACK_TIMEOUT = 1.0
@@ -35,10 +34,10 @@ class PoseControllerNode():
         self.enable_server = rospy.Service('~enable', asv_control_msgs.srv.EnableControl, self.enable)
         self.pids = []
         for i in range(6):
-            self.pids.append(Pid(0.0, 0.0, 0.0))
+            self.pids.append(Pid(0.0, 0.0, 0.0,integral_min=-0.1,integral_max=0.1,output_max=1.0))
         self.server = dynamic_reconfigure.server.Server(PoseControllerConfig, self.reconfigure)
         
-        self.pub = rospy.Publisher('~twist_commanded', TwistStamped,queue_size=1)
+        self.pub = rospy.Publisher('/wrench_commanded', WrenchStamped,queue_size=1)
         rospy.Subscriber('~pose_request', PoseStamped, self.setpointCallback)
         
         period = rospy.rostime.Duration.from_sec(1.0/frequency)
@@ -169,32 +168,32 @@ class PoseControllerNode():
         
     def updateOutput(self, event):
         if self.setpoint_valid and self.enabled:
-            twist_output = TwistStamped()
+            wrench_output = WrenchStamped()
             if self.isFeedbackValid():
                 dt = (event.current_real - event.last_real).to_sec()
-                twist_output.twist.linear.x = self.pids[0].update(self.last_feedback[0], dt)
-                twist_output.twist.linear.y = self.pids[1].update(self.last_feedback[1], dt)
-                twist_output.twist.linear.z = self.pids[2].update(self.last_feedback[2], dt)
-                twist_output.twist.angular.x = self.pids[3].update(self.last_feedback[3], dt)
-                twist_output.twist.angular.y = self.pids[4].update(self.last_feedback[4], dt)
-                twist_output.twist.angular.z = self.pids[5].update(self.last_feedback[5], dt)
+                wrench_output.wrench.force.x = self.pids[0].update(self.last_feedback[0], dt)
+                wrench_output.wrench.force.y = self.pids[1].update(self.last_feedback[1], dt)
+                wrench_output.wrench.force.z = self.pids[2].update(self.last_feedback[2], dt)
+                wrench_output.wrench.torque.x = self.pids[3].update(self.last_feedback[3], dt)
+                wrench_output.wrench.torque.y = self.pids[4].update(self.last_feedback[4], dt)
+                wrench_output.wrench.torque.z = self.pids[5].update(self.last_feedback[5], dt)
             else:
                 rospy.logwarn("Odometry feedback is invalid, setting wrench to zero.")
-                twist_output.twist.linear.x = 0
-                twist_output.twist.linear.y = 0
-                twist_output.twist.linear.z = 0
-                twist_output.twist.angular.x = 0
-                twist_output.twist.angular.y = 0
-                twist_output.twist.angular.z = 0
-            twist_output.header.stamp = rospy.Time.now()
-            twist_output.header.frame_id = 'base_link'
-            self.pub.publish(twist_output)
+                wrench_output.wrench.force.x = 0
+                wrench_output.wrench.force.y = 0
+                wrench_output.wrench.force.z = 0
+                wrench_output.wrench.torque.x = 0
+                wrench_output.wrench.torque.y = 0
+                wrench_output.wrench.torque.z = 0
+            wrench_output.header.stamp = rospy.Time.now()
+            wrench_output.header.frame_id = 'base_link'
+            self.pub.publish(wrench_output)
 
 if __name__ == "__main__":
     rospy.init_node('cascade_pose_controller')
     try:
-        frequency = rospy.get_param("~frequency", 10.0)
-        rospy.loginfo('Starting cascade pose control with %f Hz.\n', frequency)
+        frequency = rospy.get_param("~frequency", 400.0)
+        rospy.loginfo('Starting dynamic pose control with %f Hz.\n', frequency)
         node = PoseControllerNode(frequency)
         rospy.spin()
     except rospy.ROSInterruptException:
