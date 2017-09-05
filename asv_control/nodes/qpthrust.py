@@ -32,6 +32,7 @@ class ThrusterAllocationNode():
             t = rospy.get_param('~thruster')
         else:
             raise KeyError
+        self.c = 5.0
         #initialise
         self.prev_time = rospy.Time.now()
         self.update(t)
@@ -180,7 +181,7 @@ class ThrusterAllocationNode():
             #solve for x = [df,da,s]
             x = quadprog_solve_qp(self.P,q,self.G,h,A,b)
         except ValueError:
-            print '!!! Check Diagnostics !!!'
+            rospy.logwarn("No good solution, reverting to previous good solution")
             f = np.array(self.f0)
             a = np.array(self.a0)
         else:
@@ -188,7 +189,7 @@ class ThrusterAllocationNode():
             #previous thrust
             f0 = np.array(self.f0,dtype='float')
             df = x[0:n]
-            f = f0+df
+            f = self.c*(f0+df)
             #previous angle
             a0 = np.array(self.a0,dtype='float')
             da = x[n:2*n]
