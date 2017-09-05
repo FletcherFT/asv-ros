@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="model" default="$(find asv_launch)/visualisation/asv.urdf"/>
+    <arg name="gui" default="true"/>
+    <param name="robot_description" command="$(find xacro)/xacro.py $(arg model)" />
+    <param name="use_gui" value="$(arg gui)"/>
+    <arg name="rviz_config" default="$(find asv_launch)/visualisation/sim-test.rviz"/>
+
+    <!-- Transforms from Earth -> Map, Map -> Odom -->
+    <include file="$(find asv_launch)/launch/transforms.launch"/>
+
+    <!-- Pose controller (inputs pose, outputs wrench commands-->
+    <node name="pose_controller" pkg="asv_control" type="hold_position.py" output="screen">
+        <remap from="~pose_request" to="/move_base_simple/goal"/>
+        <rosparam command="load" file="$(find asv_control)/params/pose_settings.yaml"/>
+    </node>
+
+    <!-- Plant simulation (inputs achieved wrench, outputs pose + twist) -->
+    <node name="nav_sim" pkg="asv_control" type="nav_sim.py" output="screen">
+        <remap from="wrench" to="/tsol"/>
+    </node>
+
+    <!-- Control Allocator (inputs wrench_commanded, outputs wrench_achieved + control signals) -->
+    <node name='thruster_allocator' pkg='asv_control' type='qpthrust.py' output='screen'>
+        <remap from='/wrench' to='/wrench_commanded'/>
+        <rosparam command='load' file='$(find asv_control)/params/thrusters.yaml'/>
+    </node>
+
+    <!-- For reconfiguration of PIDs -->
+    <node name="dynamic_reconfigure" pkg="rqt_gui" type="rqt_gui" args="-s reconfigure"/>
+
+    <!-- For visualisation of Vehicles -->
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rviz_config)" output="log"/>
+</launch>
