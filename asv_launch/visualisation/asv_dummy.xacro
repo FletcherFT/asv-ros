@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+
+<!-- STL-version of the URDF, used with gazebo for dynamic simulation  -->
+
+<robot name="asv" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <xacro:property name="PI" value="3.1415926535897931"/>
+    <xacro:property name="eps" value="0.00000001"/>
+
+    <!-- Thruster link -->
+    <xacro:macro name="thruster_dummy_link" params="name xyz rpy">
+        <joint name="${name}" type="fixed">
+            <parent link="base_link"/>
+            <child link="${name}"/>
+            <origin rpy="${rpy}" xyz="${xyz}"/>
+        </joint>
+
+        <link name="${name}">
+            <buoyancy><compensation>1.0</compensation></buoyancy>
+            <!--visual name="${name}">
+                <geometry>
+                    <cylinder length=".5" radius=".01"/>
+                </geometry>
+                <material name="black">
+                    <color rgba="0 0 0 1"/>
+                </material>
+            </visual>  
+            <inertial>
+                <mass value=".1"/>
+            <inertia
+                ixx=".1"
+                ixy="0.0"
+                ixz="0.0"
+                iyy=".1"
+                iyz="0.0"
+                izz=".1"/>
+            </inertial-->
+        </link>
+        <gazebo reference="${name}">
+            <material>Gazebo/Black</material>
+        </gazebo>
+    </xacro:macro>
+
+    <link name="base_link">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <box size = "1.5 0.3 0.2"/>
+            </geometry>
+        </visual>
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="15"/>
+            <inertia
+            ixx="15"
+            ixy="0.0"
+            ixz="0.0"
+            iyy="15"
+            iyz="5"
+            izz="15"/>
+        </inertial>
+        <!--collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+        <box size="1 1 1"/>
+        </geometry>
+        </collision-->
+        <buoyancy>
+            <compensation>1.0</compensation>
+            <origin xyz= "0 0 0"/>
+            <limit radius="0.0"/>
+            <damping xyz="100 200 150" rpy="50 50 50"/>
+        </buoyancy>
+    </link>
+
+    <xacro:thruster_dummy_link name="thr1" xyz="-0.5 0.115 -0.5" rpy="-0.0 -1.57079632679 0.0"/>
+    <xacro:thruster_dummy_link name="thr2" xyz="0.5 -0.115 -0.5" rpy="-0.0 -1.57079632679 0.0"/>
+</robot>

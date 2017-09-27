@@ -39,6 +39,8 @@ class ThrusterAllocationNode():
         rospy.Subscriber('/wrench',WrenchStamped,self.wrenchCallback)
         self.tsol_pub = rospy.Publisher('/tsol',WrenchStamped,queue_size=1)
         self.thrusters_pub = rospy.Publisher('/thrusts',ChannelFloat32,queue_size=1)
+        self.period = rospy.rostime.Duration.from_sec(1.0/5)
+        self.timer = rospy.Timer(self.period, self.ArduSend)
 
     def update(self,t=None):
         curr_time = rospy.Time.now()
@@ -92,7 +94,9 @@ class ThrusterAllocationNode():
             self.f0 = f0
             self.a0 = a0
             #initial tau
-            self.tau = [0.,0.,0.]
+            self.tau = np.array([0.,0.,0.])
+            #initial tsol
+            self.tsol = np.array([0.,0.,0.])
             #store the thruster info
             self.t = t
             return
@@ -200,14 +204,6 @@ class ThrusterAllocationNode():
             self.a0 = a.tolist()
         #get the solved wrench
         self.tsol = self.getTau(f.tolist(),a.tolist())
-        #only publish to the arduino if there's something signifcantly new
-        if np.any(abs(self.tau-self.tsol)>0.01):
-            #convert thrusts to motor speeds (pwm in this case)
-            u = mul(inv(self.K),f)
-            #publish the control commands
-            thrustermsg = ChannelFloat32()
-            thrustermsg.values = u.tolist()+a.tolist()
-            self.thrusters_pub.publish(thrustermsg)
 
         #publish the achieved wrench
         tsol = WrenchStamped()
@@ -217,6 +213,19 @@ class ThrusterAllocationNode():
         tsol.header.frame_id = 'base_link'
         tsol.header.stamp = rospy.Time.now()
         self.tsol_pub.publish(tsol)
+
+    def ArduSend(self,event):
+        #only publish to the arduino if there's something signifcantly new
+        if np.any(abs(self.tau-self.tsol)>0.01):
+            #convert thrusts to motor speeds (pwm in this case)
+            #last good thrusts and angles
+            #normalise thrusts to +/- 1.0 (mapped to pwm on arduino side)
+            u = np.array(self.f0)/self.t['fmax']
+            a = np.array(self.a0)
+            #publish the control commands
+            thrustermsg = ChannelFloat32()
+            thrustermsg.values = u.tolist()+a.tolist()
+            self.thrusters_pub.publish(thrustermsg)
 
 if __name__ == "__main__":
     try:
