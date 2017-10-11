@@ -4,28 +4,29 @@
     <arg name="rviz" default="false"/>
     <arg name="model" default="$(find asv_launch)/urdf/asv.xacro"/>
     <arg name="rviz_config" default="$(find asv_launch)/rviz/asv.rviz"/>
-    <machine name="asv-bbb" address="xterm31.iau.dtu.dk" env-loader="/home/ubuntu/bin/env.sh" user="ubuntu"/>
+    <arg name="hostname" default="xterm31.iau.dtu.dk"/>
+    <machine name="asv-bbb" address="$(arg hostname)" env-loader="/home/ubuntu/bin/env.sh" user="ubuntu"/>
 
     <!-- nodes to be run on local machine -->
-    <group machine="asv-bbb" ns="asv">
+    <group ns="asv">
 <!-- Pose Controller (inputs pose, outputs wrench commands -->
-        <node name="pose_controller" pkg="asv_control" type="dynamic_positioning.py" output="screen">
+        <node machine="asv-bbb" name="pose_controller" pkg="asv_control" type="dynamic_positioning.py" output="screen">
             <remap from="pose_com" to="/move_base_simple/goal"/>
             <rosparam command="load" file="$(find asv_control)/params/pid_settings.yaml"/>
         </node>
         <!-- Control Allocator (inputs wrench_commanded, outputs tsol + control signals) -->
-        <node name="thrust_map" pkg="asv_control" type="thrust_map.py" output="screen">
+        <node machine="asv-bbb" name="thrust_map" pkg="asv_control" type="thrust_map.py" output="screen">
             <rosparam command="load" file="$(find asv_control)/params/thrusters.yaml"/>
         </node>
         <!-- Plant Simulation (inputs achieved wrench, outputs pose + twist) -->
-        <node name="nav_sim" pkg="asv_control" type="nav_sim.py" output="screen">
+        <node machine="asv-bbb" name="nav_sim" pkg="asv_control" type="nav_sim.py" output="screen">
             <remap from="wrench" to="tau_sol"/>
             <remap from="odom" to="state"/>
         </node>
         <!-- robot_description parameter -->
         <param name="robot_description" command="$(find xacro)/xacro.py $(arg model)" />
         <!-- Robot State Publisher -->
-        <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher"/>
+        <node machine="asv-bbb" name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher"/>
     </group>
 
     <!-- Dynamic Reconfiguration of PIDs -->
