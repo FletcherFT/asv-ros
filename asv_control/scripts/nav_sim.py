@@ -61,7 +61,7 @@ class NavSimNode():
         #rospy subscribers + publisher
         rospy.Subscriber('wrench',WrenchStamped,self.wrenchCallback)
         rospy.Subscriber('initialpose',PoseWithCovarianceStamped,self.setCallback)
-        self.odom_pub = rospy.Publisher('odometry', Odometry, queue_size=1)
+        self.odom_pub = rospy.Publisher('odom', Odometry, queue_size=1)
         self.odom_broadcaster = tf.TransformBroadcaster()
         frequency = 400.0
         if rospy.has_param('frequency'):

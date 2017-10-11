@@ -15,12 +15,12 @@ mul=np.matmul
 class PoseControllerNode():
     #Node for controlling the pose (position and orientation) of a robot,
     #using a simple PID scheme. The input consists in a setpoint (required 
-    #position) given as geometry_msgs/PoseStamped on topic '~pose_request' 
-    #and of current odometry readings as nav_msgs/Odometry on topic 'odometry'.
+    #position) given as geometry_msgs/PoseStamped on topic '~pose_com' 
+    #and of current odometry readings as nav_msgs/Odometry on topic '~state'.
     #Every degree of freedom has a separate PID. The pose values given in
     #the incoming odometry message are used as feedback for the PIDs.
     #Output is a message of type geometry_msgs/WrenchStamped on topic 
-    #'~wrench_commanded' containing force and torque values that are
+    #'~tau_com' containing force and torque values that are
     #necessary to maintain the position..
 
     def __init__(self, frequency):
@@ -31,23 +31,23 @@ class PoseControllerNode():
         self.enabled = False
         self.last_feedback = Odometry()
         self.last_feedback_time = rospy.Time.now()
-        self.enable_server = rospy.Service('~enable', asv_control_msgs.srv.EnableControl, self.enable)
+        self.enable_server = rospy.Service('enable', asv_control_msgs.srv.EnableControl, self.enable)
         self.pids = []
         for i in range(6):
             self.pids.append(Pid(0.0, 0.0, 0.0,integral_min=-0.1,integral_max=0.1,output_max=1.0))
         self.server = dynamic_reconfigure.server.Server(PoseControllerConfig, self.reconfigure)
         
-        self.pub = rospy.Publisher('/wrench_commanded', WrenchStamped,queue_size=1)
-        rospy.Subscriber('~pose_request', PoseStamped, self.setpointCallback)
+        self.pub = rospy.Publisher('tau_com', WrenchStamped,queue_size=1)
+        rospy.Subscriber('pose_com', PoseStamped, self.setpointCallback)
         
         period = rospy.rostime.Duration.from_sec(1.0/frequency)
         self.timer = rospy.Timer(period, self.updateOutput)
         
-        rospy.Subscriber('odometry', Odometry, self.odometryCallback)
+        rospy.Subscriber('state', Odometry, self.odometryCallback)
         rospy.loginfo('Listening for pose feedback to be published on '
-                      '%s...', rospy.resolve_name('odometry'))
+                      '%s...', rospy.resolve_name('state'))
         rospy.loginfo('Waiting for setpoint to be published on '
-                      '%s...', rospy.resolve_name('~pose_request'))
+                      '%s...', rospy.resolve_name('pose_com'))
 
     def enable(self, request):
         """
@@ -102,7 +102,7 @@ class PoseControllerNode():
             self.setpoint_valid = True
         self.setSetpoint(setpoint.pose)
         if not self.enabled:
-            rospy.logwarn("PIDs not enabled, please call /pose_controller/enable service")
+            rospy.logwarn("PIDs not enabled, please call 'rosservice call %s true'",rospy.resolve_name('enable'))
         rospy.loginfo('Changed setpoint to: %s', setpoint.pose)
 
     def setSetpoint(self, pose):
@@ -190,7 +190,7 @@ class PoseControllerNode():
             self.pub.publish(wrench_output)
 
 if __name__ == "__main__":
-    rospy.init_node('cascade_pose_controller')
+    rospy.init_node('dynamic_positioning')
     try:
         frequency = rospy.get_param("~frequency", 400.0)
         rospy.loginfo('Starting dynamic pose control with %f Hz.\n', frequency)

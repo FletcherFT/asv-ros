@@ -1,29 +1,13 @@
 #!/usr/bin/python
 import rospy
 from geometry_msgs.msg import WrenchStamped
-from sensor_msgs.msg import ChannelFloat32
+from sensor_msgs.msg import JointState
 import numpy as np
 from math import cos, sin, pi, radians, degrees
 from optimisation import quadprog_solve_qp
 inv = np.linalg.inv
 mul = np.matmul
 det = np.linalg.det
-
-#TODO
-#  QP Solver is now working correctly, but has issues solving for certain taus
-#   1.  Try scaling the problem:
-#       introduce a scaling factor c where c=1/(fmax)^2
-#       fmax in this case is the largest thrust prodcued out of all the thrusters
-#       Scale P, q, h, A, b with c
-#       perform the qp solve
-#       Actual f = f/c
-#   2.  For each thruster, generate a transform broadcaster
-#       self.tf_bc.append(tf.transform_broadcaster())
-#       self.thrustloc.x.append(lx[i])
-#       self.thrustloc.y.append(ly[i])
-#       (0,0,a[i]) -> euler_from_quaternion
-#       self.tf_bc[i].broadcast((self.thrustloc.x[i],self.thrustloc.y[i],0),quaternion,'base_link', self.frame_id[i])
-#       Thrusters can then be visualised in nav_sim.py
 
 class ThrusterAllocationNode():
     def __init__(self):
@@ -32,15 +16,14 @@ class ThrusterAllocationNode():
             t = rospy.get_param('~thruster')
         else:
             raise KeyError
-        self.c = 5.0
         #initialise
         self.prev_time = rospy.Time.now()
         self.update(t)
-        rospy.Subscriber('/wrench',WrenchStamped,self.wrenchCallback)
-        self.tsol_pub = rospy.Publisher('/tsol',WrenchStamped,queue_size=1)
-        self.thrusters_pub = rospy.Publisher('/thrusts',ChannelFloat32,queue_size=1)
-        self.period = rospy.rostime.Duration.from_sec(1.0/5)
-        self.timer = rospy.Timer(self.period, self.ArduSend)
+        rospy.Subscriber('tau_com',WrenchStamped,self.wrenchCallback)
+        self.tsol_pub = rospy.Publisher('tau_sol',WrenchStamped,queue_size=1)
+        self.thrusters_pub = rospy.Publisher('joint_states',JointState,queue_size=1)
+        self.period = rospy.rostime.Duration.from_sec(1.0/10.0)
+        self.timer = rospy.Timer(self.period, self.jointsend)
 
     def update(self,t=None):
         curr_time = rospy.Time.now()
@@ -51,6 +34,7 @@ class ThrusterAllocationNode():
         #checks if this is initialisation
         if not t is None:
             rospy.loginfo("...Initialising...")
+            names = []
             #the thrust/speed matrix (K)
             k = []
             #the power cost diagonal
@@ -63,21 +47,27 @@ class ThrusterAllocationNode():
             f0 = []
             #the previous angle vector
             a0 = []
+            #the current change in angle
+            da = []
             #number of thrusters
             n = t['n']
             #largest thrust possible
             fmax = 0.
             for i in range(n):
+                names.append(t['name'][i])
                 #K matrix components
                 k.append(t['kcoeff'][i])
                 #P matrix components
                 power.append(t['pcoeff'][i]) #the higher the power is the less the thruster will be used
-                omega.append(t['omega'][i]) #the higher omega is the less the thrusters will turn
-                Q.append(1e9) #should be really large to penalise the slack
+                omega.append(float(t['omega'][i])) #the higher omega is the less the thrusters will turn
+                Q.append(1e3) #should be really large to penalise the slack variable (i.e. get tau_sol as close to tau_com as possible)
                 #initialising the thrust vector
                 f0.append(0.)
                 #initialising the previous angle vector
                 a0.append(radians(t['alpha0'][i]))
+                #initialising the currrent change in angle
+                da.append(0.)
+            self.names=names
             self.K = np.diag(k)
             self.P = np.diag(power+omega+Q)
             #build the G matrix (this never changes)
@@ -88,11 +78,14 @@ class ThrusterAllocationNode():
             temp = range(2*n)
             temp = np.repeat(temp,elems)
             G = G[temp]
+            #flip the sign to get standard form
             G[1::2] = G[1::2]*-1
             self.G = G
             #store the f0 and a0 lists for later
             self.f0 = f0
             self.a0 = a0
+            self.da = da
+
             #initial tau
             self.tau = np.array([0.,0.,0.])
             #initial tsol
@@ -121,14 +114,15 @@ class ThrusterAllocationNode():
         #tiny offset to avoid inversion problems
         epsilon = 1e-9
         #maneuvrability scalar (large sigma = high maneuvrability, high power consumption)
-        sigma = 1000.
+        sigma = 0.01
         for i in range(n):
             #INEQUALITY CONTRAINT EQUATION (RHS)
             #THRUSTER SATURATION CONSTRAINTS
+            #TODO added scalar to ensure thrust change doesn't oscillate between the minimum and maximum
             #df <= fmax-f0
-            hf.append(t['fmax'][i]-f0[i])
+            hf.append(0.01*(t['fmax'][i]-f0[i]))
             #-df <= f0-fmin
-            hf.append(f0[i]-t['fmin'][i])
+            hf.append(0.01*(f0[i]-t['fmin'][i]))
             #da <= amax-a0
             ha.append(radians(t['alphamax'][i])-a0[i])
             #-da <= a0-amin
@@ -190,19 +184,24 @@ class ThrusterAllocationNode():
             a = np.array(self.a0)
         else:
             n = self.t['n']
-            #previous thrust
+            #previous thrusts
             f0 = np.array(self.f0,dtype='float')
+            #get change in thrusts
             df = x[0:n]
-            f = self.c*(f0+df)
+            #update thrusts
+            f = f0+df
             #previous angle
             a0 = np.array(self.a0,dtype='float')
+            #get change in angles
             da = x[n:2*n]
+            #update angles
             a = a0+da
             f[abs(f)<0.01]=0.
             a[abs(a)<0.01]=0.
             self.f0 = f.tolist()
             self.a0 = a.tolist()
-        #get the solved wrench
+            self.da = da.tolist()
+        #get the solved wrench (really for debugging)
         self.tsol = self.getTau(f.tolist(),a.tolist())
 
         #publish the achieved wrench
@@ -214,18 +213,14 @@ class ThrusterAllocationNode():
         tsol.header.stamp = rospy.Time.now()
         self.tsol_pub.publish(tsol)
 
-    def ArduSend(self,event):
-        #only publish to the arduino if there's something signifcantly new
-        if np.any(abs(self.tau-self.tsol)>0.01):
-            #convert thrusts to motor speeds (pwm in this case)
-            #last good thrusts and angles
-            #normalise thrusts to +/- 1.0 (mapped to pwm on arduino side)
-            u = np.array(self.f0)/self.t['fmax']
-            a = np.array(self.a0)
-            #publish the control commands
-            thrustermsg = ChannelFloat32()
-            thrustermsg.values = u.tolist()+a.tolist()
-            self.thrusters_pub.publish(thrustermsg)
+    def jointsend(self,event):
+        joint_states = JointState()
+        joint_states.header.stamp = rospy.Time.now()
+        joint_states.name = self.names
+        joint_states.position = self.a0
+        joint_states.velocity = self.da
+        joint_states.effort = self.f0
+        self.thrusters_pub.publish(joint_states)
 
 if __name__ == "__main__":
     try:

@@ -5,15 +5,15 @@
     <arg name="rviz_config" default="$(find asv_launch)/rviz/asv.rviz"/>
     <machine name="asv-bbb" address="xterm31.iau.dtu.dk" env-loader="/home/ubuntu/bin/env.sh" user="ubuntu"/>
     <!-- nodes to be run on local machine -->
-    <group machine="asv-bbb">
+    <group machine="asv-bbb" ns="asv">
         <!-- Pose Controller (inputs pose, outputs wrench commands -->
         <node machine="asv-bbb" name="pose_controller" pkg="asv_control" type="hold_position.py" output="screen">
             <remap from="~pose_request" to="/move_base_simple/goal"/>
             <rosparam command="load" file="$(find asv_control)/params/pid_settings.yaml"/>
         </node>
         <!-- Control Allocator (inputs wrench_commanded, outputs tsol + control signals) -->
-        <node machine="asv-bbb" name="thruster_allocator" pkg="asv_control" type="qpthrust.py" output="screen">
-            <remap from="/wrench" to="/wrench_commanded"/>
+        <node machine="asv-bbb" name="thrust_map" pkg="asv_control" type="thrust_map.py" output="screen">
+            <remap from="" to=""/>
             <rosparam command="load" file="$(find asv_control)/params/thrusters.yaml"/>
         </node>
     </group>
@@ -24,7 +24,7 @@
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rviz_config)" output="log"/>
     <!-- nodes to be run on asv-bbb -->
     <!-- Plant Simulation (inputs achieved wrench, outputs pose + twist) -->
-    <node machine="asv-bbb" name="nav_sim" pkg="asv_control" type="nav_sim.py" output="screen">
-        <remap from="wrench" to="/tsol"/>
+    <node name="nav_sim" pkg="asv_control" type="nav_sim.py" output="screen">
+        <remap from="wrench" to="tau_sol"/>
     </node>
 </launch>
