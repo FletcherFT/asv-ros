@@ -63,9 +63,7 @@ class NavSimNode():
         rospy.Subscriber('initialpose',PoseWithCovarianceStamped,self.setCallback)
         self.odom_pub = rospy.Publisher('odom', Odometry, queue_size=1)
         self.odom_broadcaster = tf.TransformBroadcaster()
-        frequency = 400.0
-        if rospy.has_param('frequency'):
-            frequency = rospy.get_param('frequency')
+        frequency = rospy.get_param('~frequency',400.0)
         self.period = rospy.rostime.Duration.from_sec(1.0/frequency)
         self.timer = rospy.Timer(self.period, self.kinematics)
 
