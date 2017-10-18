@@ -10,9 +10,10 @@
         <node name="pose_controller" pkg="asv_control" type="dynamic_positioning.py" output="screen">
             <remap from="pose_com" to="/move_base_simple/goal"/>
             <rosparam command="load" file="$(find asv_control)/params/pid_settings.yaml"/>
+            <param name='frequency' value='20.0'/>
         </node>
         <!-- Control Allocator (inputs wrench_commanded, outputs tsol + control signals) -->
-        <node name="thrust_map" pkg="asv_control" type="thrust_map.py" output="screen">
+        <node name="thrust_map" pkg="asv_control" type="qp_allocation.py" output="screen">
             <rosparam command="load" file="$(find asv_control)/params/thrusters.yaml"/>
         </node>
         <!-- Plant Simulation (inputs achieved wrench, outputs pose + twist) -->

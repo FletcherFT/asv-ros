@@ -12,7 +12,6 @@ inv = np.linalg.inv
 mul = np.matmul
 
 class NavSimNode():
-    
     def __init__(self):
         #inertial matrix
         self.M_iner = np.diag([15.0,15.0,15.0,100.0,100.0,100.0])
@@ -32,7 +31,6 @@ class NavSimNode():
                 self.M_addm = np.reshape(self.M_addm,(6,6))
         #initialise acceleration vector
         self.a = np.zeros(6)
-
         #velocity terms
         #coriolis and centripetal matrix due to inertia (this is a function of the inertial matrix and velocity)
         self.C_iner = np.zeros([6,6])
@@ -98,10 +96,10 @@ class NavSimNode():
         #update the added mas matrix from the old velocity
         self.C_addm = fossen.m2c(self.M_addm,self.v)
         #update Gvector from old position TODO:  see fossen.gvect for what needs to be calculated
-#        self.G = fossen.gvect(self.W,self.B,self.p[1],self.p[0],(0.,0.,0.),(0.1,0.0,-0.05))
+        #self.G = fossen.gvect(self.W,self.B,self.p[1],self.p[0],(0.,0.,0.),(0.1,0.0,-0.05))
 
     def kinematics(self,event):
-        #consolidate velocity and acceleration terms
+        #combine velocity and acceleration terms
         M = self.M_iner+self.M_addm
         C = self.C_addm + self.C_iner + self.D
         G = self.G
