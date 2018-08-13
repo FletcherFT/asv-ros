@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+
+<launch>
+	<include file="$(find asv_navigation)/launch/ekf.launch"/>
+	<include file="$(find asv_navigation)/launch/sensors.launch"/>
+</launch>

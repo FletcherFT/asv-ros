@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<launch>
+  <rosparam command="load" file="$(find asv_navigation)/params/ekf.yaml"/>
+  <arg name="root2" value="0.70710678118"/>
+  <!--<node pkg="tf2_ros" type="static_transform_publisher" name="bl_imu" args="0 0 0 $(arg root2) $(arg root2) 0 0 base_link imu_link_ned"/>-->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="bl_imu" args="0 0 0 0 0 $(arg root2) -$(arg root2) base_link imu_link_ned"/>
+  <node pkg="tf2_ros" type="static_transform_publisher" name="bl_gps" args="0 0 0 0 0 0 1 base_link gps_link"/>
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization_global" clear_params="true">
+    <remap from="diagnostics" to="diagnostics/ekf"/>
+  </node>
+  <node pkg="robot_localization" type="navsat_transform_node"
+      name="navsat_transform"  respawn="true" output="screen">
+    <remap from="/imu/data" to="/imu/data"/>
+    <remap from="/gps/fix" to="/ublox_gps/fix"/>
+  </node>
+</launch>

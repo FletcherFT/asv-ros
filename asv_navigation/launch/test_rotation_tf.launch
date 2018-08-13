@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<!-- THIS IS A UNIT TEST OF THE UM7 DRIVER ORIENTATION -->
+<launch>
+	<arg name="root2" value="0.70710678118"/>
+    <!-- IMU NODE -->
+    <node pkg="um7" type="um7_driver" name="um7_driver" output="screen">
+        <rosparam command="load" file="$(find asv_navigation)/params/um7.yaml"/>
+    </node>
+    <node name="imuned2base" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 $(arg root2) $(arg root2) 0 0 base_link imu_link_ned"/>
+    <node pkg="asv_navigation" type="imu_transform_broadcaster.py" name="rotation_tf" output="screen" />
+
+</launch>

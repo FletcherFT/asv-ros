@@ -1,0 +1,13 @@
+port: "/dev/ttyO4"
+baud: 115200
+update_rate: 30
+tf_ned_to_enu: false # this parameter needs to be false, ned2enu tf broken.
+frame_id: "imu_link_ned"
+mag_updates: true
+quat_mode: true
+zero_gyros: true
+#linear_acceleration_stdev: 1e-9
+#angular_velocity_stdev: 1e-9
+#orientation_x_stdev: 1e-9
+#orientation_y_stdev: 1e-9
+#orientation_z_stdev: 1e-9

@@ -71,8 +71,14 @@ class ThrusterAllocationNode():
         rospy.Subscriber('tau_com',WrenchStamped,self.wrenchCallback)
         self.tsol_pub = rospy.Publisher('tau_sol',WrenchStamped,queue_size=1)
         self.thrusters_pub = rospy.Publisher('joint_states',JointState,queue_size=1)
-        self.period = rospy.rostime.Duration.from_sec(1.0/10.0)
-        self.timer = rospy.Timer(self.period, self.jointsend)
+        #publish the initial joint states
+        joint_states = JointState()
+        joint_states.header.stamp = rospy.Time.now()
+        joint_states.name = self.names
+        joint_states.position = self.a0
+        joint_states.velocity = self.da
+        joint_states.effort = self.f0
+        self.thrusters_pub.publish(joint_states)
 
     def update(self):
         curr_time = rospy.Time.now()
@@ -141,7 +147,7 @@ class ThrusterAllocationNode():
         except ValueError:
             #TODO publish error
             rospy.logwarn("No good solution, reverting to previous good solution")
-            #set x to be all zeros
+            #set x to be all zeros (previous timestep thrusts conserved)
             x = np.zeros(3*n)
         #get change in thrusts
         df = x[0:n]
@@ -151,7 +157,7 @@ class ThrusterAllocationNode():
         da = x[n:2*n]
         #update angles
         a = a0+da
-        #constrain angles to 0<=a<=2*pi
+        #constrain angles to -pi<=a<pi
         a[a>pi]=-pi-(a[a>pi]-pi)
         a[a<=-pi]=pi+(pi+a[a<=-pi])
         self.f0 = f
@@ -173,7 +179,7 @@ class ThrusterAllocationNode():
         tsol.header.stamp = rospy.Time.now()
         self.tsol_pub.publish(tsol)
 
-    def jointsend(self,event):
+        #publish the new joint states
         joint_states = JointState()
         joint_states.header.stamp = rospy.Time.now()
         joint_states.name = self.names

@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+	<arg name="bag_dir" default="/home/ubuntu/catkin_ws/src/asv_framework/asv_navigation/test_results"/>
+	<include file="$(find asv_navigation)/launch/ekf.launch"/>
+	<include file="$(find asv_navigation)/launch/sensors.launch"/>
+	<!-- Record all data except camera feeds -->
+  	<node pkg="rosbag" type="record" name="flight_data_recorder" args="record -o $(arg bag_dir)/ekf_motion_test -a --split --size=2048"/>
+</launch>

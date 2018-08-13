@@ -1,15 +1,12 @@
-<?xml version="v1.0"?>
+<?xml version="1.0"?>
 <launch>
-    <arg name="port" default="/dev/ttyUSB0"/>
-    <arg name="mag_updates" default="true"/>
-    <arg name="covariance" default="-1 0 0 0 0 0 0 0 0"/>
-    <node name="um7_driver" pkg="um7" type="um7_driver" output="screen">
-        <param name="port" value="$(arg port)"/>
-        <param name="baud" value="115200"/>
-        <param name="frame_id" value="imu_link"/>
-        <param name="mag_updates" value="$(arg mag_updates)"/>
-        <param name="quat_mode" value="true"/>
-        <param name="zero_gyros" value="true"/>
-        <param name="covariance" value="$(arg covariance)"/>
+    <arg name="root2on2" value="0.70710678118"/>
+    <!-- IMU NODE -->
+    <node pkg="um7" type="um7_driver" name="um7_driver" output="screen">
+        <rosparam command="load" file="$(find asv_navigation)/params/um7.yaml"/>
     </node>
+    
+    <node pkg="tf2_ros" type="static_transform_publisher" name="imu_link_ned_to_base_link" args="0 0 0 -1 0 0 0 base_link imu_link_ned"/>
+    <node pkg="tf2_ros" type="static_transform_publisher" name="imu_link_to_base_link" args="0 0 0 0 0 $(arg root2on2) $(arg root2on2) base_link imu_link"/>
+
 </launch>
