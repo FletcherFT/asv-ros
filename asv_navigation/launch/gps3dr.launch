@@ -5,8 +5,9 @@
         output="screen"
         clear_params="true"
         respawn="true"
-        respawn_delay="10">
+        respawn_delay="5">
         <rosparam command="load" file="$(find asv_navigation)/params/3dr_gps_lea6h.yaml"/>
         <remap from="diagnostics" to="diagnostics/gps"/>
     </node>
+    <node pkg="tf2_ros" type="static_transform_publisher" name="bl_gps" args="0 0 0 0 0 0 1 base_link gps_link"/>
 </launch>

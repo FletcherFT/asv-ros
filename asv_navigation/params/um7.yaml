@@ -1,4 +1,4 @@
-port: "/dev/ttyO4"
+port: "/dev/ttyUSB0"
 baud: 115200
 update_rate: 30
 tf_ned_to_enu: false # this parameter needs to be false, ned2enu tf broken.
