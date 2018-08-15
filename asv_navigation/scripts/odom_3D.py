@@ -28,12 +28,13 @@ class odom3d:
 
         rospy.init_node("odom_unfiltered")
         self.pub = rospy.Publisher("odometry/unfiltered",Odometry,queue_size=10)
+        self.pub.publish(self.odom_msg)
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
         imu_sub = message_filters.Subscriber('imu/data',Imu)
         gps_sub = message_filters.Subscriber("odometry/gps",Odometry)
         vel_sub = message_filters.Subscriber("ublox_gps/fix_velocity",TwistWithCovarianceStamped)
-        ts = message_filters.ApproximateTimeSynchronizer([imu_sub, gps_sub, vel_sub], 10, 0.1)
+        ts = message_filters.ApproximateTimeSynchronizer([imu_sub, gps_sub, vel_sub], 10, 0.25)
         ts.registerCallback(self.publish)
         rospy.spin()
 
@@ -44,15 +45,10 @@ class odom3d:
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
             rospy.logerr(e)
             return
-
         q_rot = (imu_trans.transform.rotation.x,imu_trans.transform.rotation.y,imu_trans.transform.rotation.z,imu_trans.transform.rotation.w)
         q_new = tf_conversions.transformations.quaternion_multiply(q_rot, (imu_msg.orientation.x,imu_msg.orientation.y,imu_msg.orientation.z,imu_msg.orientation.w))
         self.odom_msg.header.stamp = rospy.Time.now()
-
-        self.odom_msg.pose.pose.orientation.x = q_new[0]
-        self.odom_msg.pose.pose.orientation.y = q_new[1]
-        self.odom_msg.pose.pose.orientation.z = q_new[2]
-        self.odom_msg.pose.pose.orientation.w = q_new[3]
+        self.odom_msg.pose.pose.orientation = imu_msg.orientation
 
         self.odom_msg.pose.pose.position.x = gps_msg.pose.pose.position.x - gps_trans.transform.translation.x
         self.odom_msg.pose.pose.position.y = gps_msg.pose.pose.position.y - gps_trans.transform.translation.y
@@ -65,12 +61,12 @@ class odom3d:
         
         self.pub.publish(self.odom_msg)
 
-        self.header.stamp = rospy.Time.now()
-        self.header.frame_id = "odom"
-        self.child_frame_id = "base_link"
-        self.transform.translation = self.odom_msg.pose.pose.position
-        self.transform.rotation = self.odom_msg.pose.pose.orientation
-        self.br.sendTransform(T)
+        self.T.header.stamp = rospy.Time.now()
+        self.T.header.frame_id = "odom"
+        self.T.child_frame_id = "base_link"
+        self.T.transform.translation = self.odom_msg.pose.pose.position
+        self.T.transform.rotation = self.odom_msg.pose.pose.orientation
+        self.br.sendTransform(self.T)
 
 if __name__ == '__main__':
     handle = odom3d()
