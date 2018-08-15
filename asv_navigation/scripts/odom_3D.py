@@ -23,26 +23,8 @@ class odom3d:
         self.odom_msg.header.frame_id = "odom"
         self.odom_msg.child_frame_id = "base_link"
 
-        self.orientation = Quaternion()
-        self.orientation.x = 0
-        self.orientation.y = 0
-        self.orientation.z = 0
-        self.orientation.w = 1.0
-
-        self.position = Point()
-        self.position.x = 0
-        self.position.y = 0
-        self.position.z = 0
-
-        self.angular = Vector3()
-        self.angular.x = 0
-        self.angular.y = 0
-        self.angular.z = 0
-
-        self.linear = Vector3()
-        self.linear.x = 0
-        self.linear.y = 0
-        self.linear.z = 0
+        self.br = tf2_ros.TransformBroadcaster()
+        self.T = TransformStamped()
 
         rospy.init_node("odom_unfiltered")
         self.pub = rospy.Publisher("odometry/unfiltered",Odometry,queue_size=10)
@@ -82,6 +64,13 @@ class odom3d:
         self.odom_msg.twist.twist.linear.z = vel[2]
         
         self.pub.publish(self.odom_msg)
+
+        self.header.stamp = rospy.Time.now()
+        self.header.frame_id = "odom"
+        self.child_frame_id = "base_link"
+        self.transform.translation = self.odom_msg.pose.pose.position
+        self.transform.rotation = self.odom_msg.pose.pose.orientation
+        self.br.sendTransform(T)
 
 if __name__ == '__main__':
     handle = odom3d()
