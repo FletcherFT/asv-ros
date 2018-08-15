@@ -1,12 +1,7 @@
 <?xml version="1.0"?>
 <launch>
-  <rosparam command="load" file="$(find robot_localization)/params/ukf_template.yaml" />
-  <node pkg="robot_localization" type="ukf_localization_node" name="ukf_se" clear_params="true">
+  <node pkg="robot_localization" type="ukf_localization_node" name="ukf_localization_global" clear_params="true">
     <remap from="diagnostics" to="diagnostics/ukf"/>
-  </node>
-  <node pkg="robot_localization" type="navsat_transform_node"
-      name="navsat_transform"  respawn="true" output="screen">
-    <remap from="/imu/data" to="/imu/data"/>
-    <remap from="/gps/fix" to="/ublox_gps/fix"/>
+    <rosparam command="load" file="$(find asv_navigation)/params/ukf.yaml" />
   </node>
 </launch>

@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- TF NODES FOR GPS -->
+  <node pkg="robot_localization" type="navsat_transform_node"
+    name="navsat_transform"  respawn="true" output="screen">
+  	<rosparam command="load" file="$(find asv_navigation)/params/navsat_tf.yaml"/>
+  	<remap from="/imu/data" to="/imu/data"/>
+    <remap from="/gps/fix" to="/ublox_gps/fix"/>
+	</node>
+	<node pkg="tf2_ros" type="static_transform_publisher" name="bl_gps" args="0 0 0 0 0 0 1 base_link gps_link"/>
+
+	<!--TF NODES FOR IMU -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="imu_link_ned_to_base_link" args="0 0 0 -1 0 0 0 base_link imu_link_ned"/>
+  <node pkg="tf2_ros" type="static_transform_publisher" name="imu_link_to_base_link" args="0 0 0 0 0 0 1 base_link imu_link"/>
+</launch>

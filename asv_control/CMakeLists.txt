@@ -10,7 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_srvs
 )
 
-catkin_python_setup()
+#catkin_python_setup()
 
 # Generate dynamic reconfigure parameters in the 'cfg' folder
  generate_dynamic_reconfigure_options(
@@ -26,10 +26,10 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-install(PROGRAMS
-  scripts/my_python_script
-  src/asv_control/pose_controller.py
-  src/asv_control/nav_sim.py
-  src/asv_control/qp_allocation.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+#install(PROGRAMS
+#  scripts/my_python_script
+#  src/asv_control/pose_controller.py
+#  src/asv_control/nav_sim.py
+#  src/asv_control/qp_allocation.py
+#  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+#)

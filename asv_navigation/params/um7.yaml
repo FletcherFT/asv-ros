@@ -1,13 +1,35 @@
 port: "/dev/ttyUSB0"
 baud: 115200
 update_rate: 30
-tf_ned_to_enu: false # this parameter needs to be false, ned2enu tf broken.
+tf_ned_to_enu: false
 frame_id: "imu_link_ned"
 mag_updates: true
 quat_mode: true
 zero_gyros: true
-#linear_acceleration_stdev: 1e-9
-#angular_velocity_stdev: 1e-9
-#orientation_x_stdev: 1e-9
-#orientation_y_stdev: 1e-9
-#orientation_z_stdev: 1e-9
+orientation_covariance: [ 1.787233506139090e-06,
+                          3.823327413238608e-07,
+                         -2.399717050392915e-06,
+                          3.823327413238608e-07,
+                          3.346040503075104e-07,
+                         -8.309546823793736e-07,
+                         -2.399717050392915e-06,
+                         -8.309546823793736e-07,
+                          7.592913178978767e-06]
+angular_velocity_covariance: [ 1.540934026195736e-06,
+                               1.378946495763380e-07,
+                               3.715020337008800e-09,
+                               1.378946495763380e-07,
+                               5.146325772762664e-07,
+                              -1.666073981202048e-09,
+                               3.715020337008800e-09,
+                              -1.666073981202048e-09,
+                               5.828118097747863e-07]
+linear_acceleration_covariance: [  1.884105344923717e-05,
+                                  -5.091815898898869e-06,
+                                   8.273584586605052e-06,
+                                  -5.091815898898869e-06,
+                                   3.771811400618709e-05,
+                                  -2.780439881080065e-05,
+                                   8.273584586605052e-06,
+                                  -2.780439881080065e-05,
+                                   8.596662516403662e-05]

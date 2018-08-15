@@ -5,9 +5,7 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
-        - /Axes1
-        - /Imu1
-        - /Imu1/Status1
+        - /Moving Frame1
       Splitter Ratio: 0.5
     Tree Height: 775
   - Class: rviz/Selection
@@ -54,19 +52,17 @@ Visualization Manager:
     - Class: rviz/Axes
       Enabled: true
       Length: 1
-      Name: Axes
+      Name: Moving Frame
       Radius: 0.100000001
-      Reference Frame: base_link
+      Reference Frame: imu_link_ned
       Value: true
-    - Alpha: 1
-      Class: rviz_plugin_tutorials/Imu
-      Color: 204; 51; 204
-      Enabled: false
-      History Length: 1
-      Name: Imu
-      Topic: /imu/data
-      Unreliable: false
-      Value: false
+    - Class: rviz/Axes
+      Enabled: true
+      Length: 1
+      Name: Inertial Frame
+      Radius: 0.100000001
+      Reference Frame: <Fixed Frame>
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48

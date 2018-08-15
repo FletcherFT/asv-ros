@@ -5,7 +5,7 @@
   <description>The asv_control package.  Contains a node for thruster allocation, a node for managing PID controllers for holding a particular pose, and a node for managing PID controllers for holding a particular twist.</description>
   <author email="fletcher.thompson@utas.edu.au">Fletcher Thompson</author>
   <maintainer email="fletcher.thompson@utas.edu.au">Fletcher Thompson</maintainer>
-  <license>BSD</license>
+  <license>MIT</license>
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>rospy</build_depend>

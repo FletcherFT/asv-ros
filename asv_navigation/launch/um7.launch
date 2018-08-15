@@ -1,10 +1,8 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="root2on2" value="0.70710678118"/>
+	<!-- TESTED 14/08/2018: FRAMES CORRECTED -->
     <!-- IMU NODE -->
     <node pkg="um7" type="um7_driver" name="um7_driver" output="screen">
         <rosparam command="load" file="$(find asv_navigation)/params/um7.yaml"/>
     </node>
-    <node pkg="tf2_ros" type="static_transform_publisher" name="imu_link_ned_to_base_link" args="0 0 0 -1 0 0 0 base_link imu_link_ned"/>
-    <node pkg="tf2_ros" type="static_transform_publisher" name="imu_link_to_base_link" args="0 0 0 0 0 $(arg root2on2) $(arg root2on2) base_link imu_link"/>
 </launch>
