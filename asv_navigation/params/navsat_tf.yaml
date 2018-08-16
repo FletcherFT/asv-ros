@@ -6,7 +6,7 @@
 datum: [-41.38956, 147.11879, 0.0]
 
 # Frequency of the main run loop
-frequency: 1
+frequency: 4
 
 # Delay time, in seconds, before we calculate the transform from the UTM frame to your world frame. This is especially
 # important if you have use_odometry_yaw set to true. Defaults to 0.
