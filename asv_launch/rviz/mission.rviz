@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /AerialMapDisplay1
         - /Filter1/Covariance1/Position1
         - /GPS1/Covariance1/Position1
       Splitter Ratio: 0.5
@@ -40,7 +41,7 @@ Visualization Manager:
       Enabled: true
       Frame Convention: XYZ -> ENU
       Name: AerialMapDisplay
-      Object URI: https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v9/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZmZ0IiwiYSI6ImNqa2tzY3h5bTBmd3Uza3BibnM5cWFoYXcifQ.GMl07DFmU7bIgGCCh20fNQ
+      Object URI: https://api.mapbox.com/styles/v1/fft/cjkwgq2py386d2sqnrqlknn1x/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZmZ0IiwiYSI6ImNqa2tzY3h5bTBmd3Uza3BibnM5cWFoYXcifQ.GMl07DFmU7bIgGCCh20fNQ
       Robot frame: odom
       Topic: /ublox_gps/fix
       Value: true
@@ -124,7 +125,7 @@ Visualization Manager:
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: utm
+    Fixed Frame: odom
     Frame Rate: 30
   Name: root
   Tools:
@@ -154,8 +155,8 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Scale: 1.17133069
-      Target Frame: base_link
+      Scale: 0.796095252
+      Target Frame: odom
       Value: TopDownOrtho (rviz)
       X: 0
       Y: 0
