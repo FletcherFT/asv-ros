@@ -111,9 +111,9 @@ process_noise_covariance: [    1e+3,    0,    0,    0,    0,    0,    0,     0, 
                                0,      0,    0,    0,    0,    0,    0,     0,     0,    1e+3,    0,    0,    0,    0,    0,
                                0,      0,    0,    0,    0,    0,    0,     0,     0,    0,    1e+3,    0,    0,    0,    0,
                                0,      0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    1e+3,  0,    0,    0,
-                               0,      0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    1e-3, 0,    0,
-                               0,      0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    1e-3, 0,
-                               0,      0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    1e-3]
+                               0,      0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    1e+3, 0,    0,
+                               0,      0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    1e+3, 0,
+                               0,      0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    1e+3]
 # [ADVANCED] This represents the initial value for the state estimate error covariance matrix. Setting a diagonal
 # value (variance) to a large value will result in rapid convergence for initial measurements of the variable in
 # question. Users should take care not to use large values for variables that will not be measured directly. The values
