@@ -6,7 +6,7 @@
   	<rosparam command="load" file="$(find asv_navigation)/params/navsat_tf.yaml"/>
   	<remap from="/imu/data" to="/imu/data"/>
     <remap from="/gps/fix" to="/ublox_gps/fix"/>
-    <remap from="/odometry/filtered" to="/odometry/unfiltered"/>
+    <remap from="/odometry/filtered" to="/odometry/filtered"/>
 	</node>
 	<node pkg="tf2_ros" type="static_transform_publisher" name="bl_gps" args="0 0 0 0 0 0 1 base_link gps_link"/>
 	<!--TF NODES FOR IMU -->
