@@ -2,7 +2,7 @@
 <launch>
   <!-- TF NODES FOR GPS -->
   <node pkg="robot_localization" type="navsat_transform_node"
-    name="navsat_transform"  respawn="true" output="screen">
+    name="navsat_transform" output="screen">
   	<rosparam command="load" file="$(find asv_navigation)/params/navsat_tf.yaml"/>
   	<remap from="/imu/data" to="/imu/data"/>
     <remap from="/gps/fix" to="/ublox_gps/fix"/>
