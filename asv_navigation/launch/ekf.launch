@@ -4,4 +4,6 @@
     <remap from="diagnostics" to="diagnostics/ekf"/>
     <rosparam command="load" file="$(find asv_navigation)/params/ekf.yaml"/>
   </node>
+    <!-- TFS -->
+  <include file="$(find asv_navigation)/launch/tfs.launch"/>
 </launch>

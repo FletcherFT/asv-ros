@@ -4,4 +4,6 @@
     <remap from="diagnostics" to="diagnostics/ukf"/>
     <rosparam command="load" file="$(find asv_navigation)/params/ukf.yaml" />
   </node>
+  <!-- TFS -->
+  <include file="$(find asv_navigation)/launch/tfs.launch"/>
 </launch>

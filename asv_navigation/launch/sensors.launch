@@ -4,6 +4,4 @@
   <include file="$(find asv_navigation)/launch/gps3dr.launch"/>
   <!-- IMU NODE -->
   <include file="$(find asv_navigation)/launch/um7.launch"/>
-  <!-- TFS -->
-  <include file="$(find asv_navigation)/launch/tfs.launch"/>
 </launch>

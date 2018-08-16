@@ -9,7 +9,6 @@
     <remap from="/odometry/filtered" to="/odometry/unfiltered"/>
 	</node>
 	<node pkg="tf2_ros" type="static_transform_publisher" name="bl_gps" args="0 0 0 0 0 0 1 base_link gps_link"/>
-
 	<!--TF NODES FOR IMU -->
   <node pkg="tf2_ros" type="static_transform_publisher" name="imu_link_ned_to_base_link" args="0 0 0 -1 0 0 0 base_link imu_link_ned"/>
   <node pkg="tf2_ros" type="static_transform_publisher" name="imu_link_to_base_link" args="0 0 0 0 0 0 1 base_link imu_link"/>
