@@ -6,7 +6,7 @@
 datum: [-41.38956, 147.11879, 0.0]
 
 # Frequency of the main run loop
-frequency: 4
+frequency: 5
 
 # Delay time, in seconds, before we calculate the transform from the UTM frame to your world frame. This is especially
 # important if you have use_odometry_yaw set to true. Defaults to 0.
@@ -22,7 +22,7 @@ magnetic_declination_radians: 0.24836035 # +14.23 degrees in Launceston Tasmania
 yaw_offset: 1.57079632679 # IMU calibrated to read 0 at North
 #yaw_offset: 0.0
 
-zero_altitude: true
+zero_altitude: false
 
 # If this is true, the transform world_frame->utm transform is broadcast for use by other nodes. Defaults to false.
 broadcast_utm_transform: false
