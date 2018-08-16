@@ -41,7 +41,7 @@ Visualization Manager:
       Frame Convention: XYZ -> ENU
       Name: AerialMapDisplay
       Object URI: https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v9/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZmZ0IiwiYSI6ImNqa2tzY3h5bTBmd3Uza3BibnM5cWFoYXcifQ.GMl07DFmU7bIgGCCh20fNQ
-      Robot frame: base_link
+      Robot frame: odom
       Topic: /ublox_gps/fix
       Value: true
       Zoom: 18
@@ -51,24 +51,6 @@ Visualization Manager:
       Name: Origin Coords
       Radius: 20
       Reference Frame: odom
-      Value: true
-    - Alpha: 0.5
-      Cell Size: 1
-      Class: rviz/Grid
-      Color: 160; 160; 164
-      Enabled: true
-      Line Style:
-        Line Width: 0.0299999993
-        Value: Lines
-      Name: Grid
-      Normal Cell Count: 0
-      Offset:
-        X: 0
-        Y: 0
-        Z: 0
-      Plane: XY
-      Plane Cell Count: 10
-      Reference Frame: <Fixed Frame>
       Value: true
     - Angle Tolerance: 0.100000001
       Class: rviz/Odometry
@@ -142,7 +124,7 @@ Visualization Manager:
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: odom
+    Fixed Frame: utm
     Frame Rate: 30
   Name: root
   Tools:
@@ -172,7 +154,7 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Scale: 1.57983649
+      Scale: 1.17133069
       Target Frame: base_link
       Value: TopDownOrtho (rviz)
       X: 0
