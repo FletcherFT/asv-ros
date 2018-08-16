@@ -1,6 +1,6 @@
 port: "/dev/ttyUSB0"
 baud: 115200
-update_rate: 20
+update_rate: 30
 tf_ned_to_enu: true
 frame_id: "imu_link"
 mag_updates: true
