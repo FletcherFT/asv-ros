@@ -2,8 +2,7 @@
 <launch>
 	<arg name="bag_dir" default="/home/ubuntu/test_results"/>
 	<!-- BRINGUP SENSORS AND TFS -->
-	<include file="$(find asv_navigation)/launch/sensors.launch"/>
-	<include file="$(find asv_navigation)/launch/ekf.launch"/>
+	<include file="$(find asv_launch)/launch/bringup_navigation.launch"/>
 	<!-- Record all data -->
 	<node pkg="rosbag" type="record" name="sensor_data_recorder" args="record -o $(arg bag_dir)/ekf_motion_test -a --split --size=2048"/>
 </launch>

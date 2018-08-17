@@ -1,6 +1,14 @@
 <?xml version="1.0"?>
-
 <launch>
-	<include file="$(find asv_navigation)/launch/ekf.launch"/>
+	<arg name="shoreside_hostname" default="fft-laptop.local"/>
+	<arg name="shoreside_user" default="fft"/>
+	<arg name="env_path" default="/home/$(arg shoreside_user)/ROS_ws/src/asv_framework/asv_launch/envs/shoreside-env.sh"/>
+	<machine name="shoreside" address="$(arg shoreside_hostname)" user="$(arg shoreside_user)" env-loader="$(arg env_path)"/>
+	<!-- BRINGUP SENSORS AND TFS -->
 	<include file="$(find asv_navigation)/launch/sensors.launch"/>
+	<include file="$(find asv_navigation)/launch/ekf.launch"/>
+	<node machine="shoreside" pkg="rviz" type="rviz" name="rviz" args="-d /home/$(arg shoreside_user)/ROS_ws/src/asv_framework/asv_launch/rviz/mission.rviz">
+		<remap from="move_base_simple/goal" to="guidance/operator"/>
+		<remap from="intialpose" to="set_pose"/>
+	</node>
 </launch>

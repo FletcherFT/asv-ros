@@ -6,7 +6,7 @@ datum: [-41.401532, 147.120110, 0.0]  #SWANSON BUILDING REFERENCE
 #datum: [-41.38956, 147.11879, 0.0]
 
 # Frequency of the main run loop
-frequency: 5
+frequency: 30
 
 # Delay time, in seconds, before we calculate the transform from the UTM frame to your world frame. This is especially
 # important if you have use_odometry_yaw set to true. Defaults to 0.
@@ -20,7 +20,6 @@ magnetic_declination_radians: 0.24836035 # +14.23 degrees in Launceston Tasmania
 # Your IMU's yaw, once the magentic_declination_radians value is added to it, should report 0 when facing east. If it
 # doesn't, enter the offset here. Defaults to 0.
 yaw_offset: 1.57079632679 # IMU calibrated to read 0 at North
-#yaw_offset: 0.0
 
 zero_altitude: false
 
@@ -29,7 +28,7 @@ broadcast_utm_transform: true
 
 # If this is true, the utm->world_frame transform will be published instead of the world_frame->utm transform. 
 # Note that broadcast_utm_transform still has to be enabled. Defaults to false.
-broadcast_utm_transform_as_parent_frame: false
+broadcast_utm_transform_as_parent_frame: true
 
 # If this is true, all received odometry data is converted back to a lat/lon and published as a NavSatFix message as
 # /gps/filtered. Defaults to false.
