@@ -7,5 +7,5 @@
 	<!-- BRINGUP RVIZ ON SHORESIDE -->
 	<include file="$(find asv_launch)/launch/bringup_hmi.launch"/>
 	<!-- Record all data -->
-	<node pkg="rosbag" type="record" name="sensor_data_recorder" args="record -o $(arg bag_dir)/ekf_motion_test -a --split --size=2048"/>
+	<node if="$(arg record)" pkg="rosbag" type="record" name="sensor_data_recorder" args="record -o $(arg bag_dir)/ekf_motion_test -a --split --size=2048"/>
 </launch>
