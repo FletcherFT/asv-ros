@@ -1,9 +1,16 @@
 <?xml version="1.0"?>
 <launch>
+	<arg name="shoreside_hostname" default="fft-laptop.local"/>
+	<arg name="shoreside_user" default="fft"/>
+	<arg name="env_path" default="/home/$(arg shoreside_user)/ROS_ws/src/asv_framework/asv_launch/envs/shoreside-env.sh"/>
+	<machine name="shoreside" address="$(arg shoreside_hostname)" user="$(arg shoreside_user)" env-loader="$(arg env_path)"/>
 	<!-- SUCCESSFUL TEST AND DATA RECOVERY -->
-	<arg name="bag_dir" default="/home/fft/test_results"/>
+	<arg name="bag_dir" default="$(env HOME)/test_results"/>
 	<include file="$(find asv_navigation)/launch/um7.launch"/>
+	<!--TF NODES FOR IMU -> BASE_LINK-->
+	<node pkg="tf2_ros" type="static_transform_publisher" name="imu_link_ned_to_base_link" args="0 0 0 -1 0 0 0 base_link imu_link_ned"/>
+	<node pkg="tf2_ros" type="static_transform_publisher" name="imu_link_to_base_link" args="0 0 0 0 0 0 1 base_link imu_link"/>
 	<node pkg="asv_navigation" type="imu_transform_broadcaster.py" name="baselink_to_odom" output="screen"/>
-	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find asv_launch)/rviz/imu-config.rviz"/>
-  	<node pkg="rosbag" type="record" name="flight_data_recorder" args="record -o $(arg bag_dir)/imu_variance_test /imu/data --split --size=2048"/>
+	<node machine="shoreside" pkg="rviz" type="rviz" name="rviz" args="-d $(find asv_launch)/rviz/imu-config.rviz"/>
+  	<node pkg="rosbag" type="record" name="imu_data_recorder" args="record -o $(arg bag_dir)/imu_variance_test /imu/data /tf --split --size=2048"/>
 </launch>

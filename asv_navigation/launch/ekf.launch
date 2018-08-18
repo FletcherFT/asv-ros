@@ -9,6 +9,7 @@
 	<node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization_global" clear_params="true" output="screen">
 		<rosparam command="load" file="$(find asv_navigation)/params/ekf.yaml"/>
 	</node>
+	<node pkg="asv_navigation" type="unfiltered_odom.py" name="unfiltered_odom" output="screen"/>
 	<!-- NAVSAT TRANSFORMATION NODE -->
 	<node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform_node" clear_params="true" output="screen">
 		<remap from="gps/fix" to="ublox_gps/fix"/>

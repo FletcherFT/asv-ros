@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-	<arg name="bag_dir" default="/home/ubuntu/test_results"/>
+	<arg name="bag_dir" default="$(env HOME)/test_results"/>
 	<!-- BRINGUP SENSORS AND TFS -->
 	<include file="$(find asv_launch)/launch/bringup_navigation.launch"/>
 	<!-- Record all data -->

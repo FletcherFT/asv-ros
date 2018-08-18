@@ -7,6 +7,7 @@ Panels:
         - /Global Options1
         - /Filter1/Covariance1/Position1
         - /GPS1/Covariance1/Position1
+        - /AerialMapDisplay1/Status1
       Splitter Ratio: 0.5
     Tree Height: 761
   - Class: rviz/Selection
@@ -48,7 +49,7 @@ Visualization Manager:
           Scale: 1
           Value: true
         Value: true
-      Enabled: false
+      Enabled: true
       Keep: 1
       Name: Filter
       Position Tolerance: 0.100000001
@@ -64,7 +65,7 @@ Visualization Manager:
         Value: Arrow
       Topic: /odometry/filtered
       Unreliable: true
-      Value: false
+      Value: true
     - Angle Tolerance: 0.100000001
       Class: rviz/Odometry
       Covariance:
@@ -82,7 +83,7 @@ Visualization Manager:
           Scale: 1
           Value: true
         Value: true
-      Enabled: false
+      Enabled: true
       Keep: 1
       Name: GPS
       Position Tolerance: 0.100000001
@@ -98,20 +99,20 @@ Visualization Manager:
         Value: Arrow
       Topic: /odometry/gps
       Unreliable: false
-      Value: false
+      Value: true
     - Alpha: 0.699999988
-      Blocks: 8
+      Blocks: 3
       Class: rviz_plugins/AerialMapDisplay
       Draw Behind: true
       Dynamically reload: true
       Enabled: true
       Frame Convention: XYZ -> ENU
       Name: AerialMapDisplay
-      Object URI: https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v9/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZmZ0IiwiYSI6ImNqa2tzY3h5bTBmd3Uza3BibnM5cWFoYXcifQ.GMl07DFmU7bIgGCCh20fNQ
+      Object URI: https://api.mapbox.com/styles/v1/fft/cjkz25elp35592rqnwtldyrcq/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZmZ0IiwiYSI6ImNqa2tzY3h5bTBmd3Uza3BibnM5cWFoYXcifQ.GMl07DFmU7bIgGCCh20fNQ
       Robot frame: base_link
       Topic: /ublox_gps/fix
       Value: true
-      Zoom: 18
+      Zoom: 17
     - Class: rviz/TF
       Enabled: true
       Frame Timeout: 15
@@ -151,7 +152,7 @@ Visualization Manager:
       Marker Topic: /markers
       Name: Current Target
       Namespaces:
-        guidance: true
+        {}
       Queue Size: 100
       Value: true
   Enabled: true
@@ -178,7 +179,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0.00499999989
+      Angle: 0
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
@@ -188,7 +189,7 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Scale: 2.13925624
+      Scale: 1
       Target Frame: base_link
       Value: TopDownOrtho (rviz)
       X: 0

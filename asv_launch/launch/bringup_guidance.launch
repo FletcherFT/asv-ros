@@ -5,7 +5,5 @@
 	<arg name="env_path" default="/home/$(arg shoreside_user)/ROS_ws/src/asv_framework/asv_launch/envs/shoreside-env.sh"/>
 	<machine name="shoreside" address="$(arg shoreside_hostname)" user="$(arg shoreside_user)" env-loader="$(arg env_path)"/>
 	<!-- BRINGUP SENSORS AND TFS -->
-	<include file="$(find asv_navigation)/launch/sensors.launch"/>
-	<include file="$(find asv_navigation)/launch/ekf_utm.launch"/>
-	<node machine="shoreside" pkg="rviz" type="rviz" name="rviz" args="-d /home/$(arg shoreside_user)/ROS_ws/src/asv_framework/asv_launch/rviz/mission.rviz"/>
+	<node pkg="asv_guidance" type="guidance.py" name="guidance_node" output="screen"/>
 </launch>
