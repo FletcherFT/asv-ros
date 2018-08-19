@@ -1,11 +1,14 @@
 <?xml version="1.0"?>
 <launch>
 	<arg name="bag_dir" default="$(env HOME)/test_results"/>
-	<arg name="record" default="true"/>
+    <arg name="record" default="true"/>
+    <arg name="hmi" default="true"/>
 	<!-- BRINGUP SENSORS AND TFS -->
 	<include file="$(find asv_launch)/launch/bringup_navigation.launch"/>
-	<!-- BRINGUP RVIZ ON SHORESIDE -->
-	<include file="$(find asv_launch)/launch/bringup_hmi.launch"/>
+    <!-- BRINGUP RVIZ ON SHORESIDE -->
+    <group if="$(arg hmi)">
+	    <include file="$(find asv_launch)/launch/bringup_hmi.launch"/>
+    </group>
 	<!-- Record all data -->
 	<node if="$(arg record)" pkg="rosbag" type="record" name="sensor_data_recorder" args="record -o $(arg bag_dir)/ekf_motion_test -a --split --size=2048"/>
 </launch>

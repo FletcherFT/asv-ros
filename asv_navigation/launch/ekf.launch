@@ -12,7 +12,8 @@
 	<node pkg="asv_navigation" type="unfiltered_odom.py" name="unfiltered_odom" output="screen"/>
 	<!-- NAVSAT TRANSFORMATION NODE -->
 	<node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform_node" clear_params="true" output="screen">
-		<remap from="gps/fix" to="ublox_gps/fix"/>
+        <remap from="gps/fix" to="ublox_gps/fix"/>
+        <remap from="gps/filtered" to="ublox_gps/filtered"/>
 		<rosparam command="load" file="$(find asv_navigation)/params/navsat_tf.yaml"/>
 	</node>
 </launch>
