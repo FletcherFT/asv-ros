@@ -9,7 +9,6 @@ import tf2_ros
 from tf_conversions import transformations as tf
 import tf
 import message_filters
-from scipy.linalg import block_diag
 
 def qv_mult(q1, v1):
     q2 = list(v1)
