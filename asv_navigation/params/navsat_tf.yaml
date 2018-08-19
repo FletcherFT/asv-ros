@@ -6,11 +6,11 @@ datum: [-41.401532, 147.120110, 0.0]  #SWANSON BUILDING REFERENCE
 #datum: [-41.38956, 147.11879, 0.0]
 
 # Frequency of the main run loop
-frequency: 30
+frequency: 10
 
 # Delay time, in seconds, before we calculate the transform from the UTM frame to your world frame. This is especially
 # important if you have use_odometry_yaw set to true. Defaults to 0.
-delay: 0.0
+delay: 0
 
 # If yoour IMU does not account for magnetic declination, enter the value for your location here. If you don't know it,
 # see http://www.ngdc.noaa.gov/geomag-web/ (make sure to convert the value to radians). This parameter is mandatory.

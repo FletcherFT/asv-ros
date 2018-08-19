@@ -8,4 +8,6 @@
 		<remap from="move_base_simple/goal" to="guidance/operator"/>
 		<remap from="intialpose" to="set_pose"/>
 	</node>
+	<node machine="shoreside" pkg="rqt_service_caller" type="rqt_service_caller" name="service_caller"/>
+	<node machine="shoreside" pkg="rqt_console" type="rqt_console" name="console"/>
 </launch>
