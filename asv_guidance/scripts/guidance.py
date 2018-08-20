@@ -25,6 +25,7 @@ class guidance:
         self.setpoint_pub = rospy.Publisher("guidance/setpoint",PoseStamped,queue_size=10)
         # TF listeners
         self.tfBuffer = tf2_ros.Buffer()
+        self.listener = tf2_ros.TransformListener(self.tfBuffer)
         self.tfListener = tf.TransformListener()
         # Flow Control
         self.manual = True #switch for automated or manual override guidance
@@ -40,21 +41,18 @@ class guidance:
         rospy.spin()
 
     def handle_resume(self,req):
-        res = Trigger()
+        #es = Trigger()
         if self.manual:
             self.manual=False
-            res.success=True
-            res.message="Waypoint override disabled, resuming current waypoint."
+            res = [True,"Waypoint override disabled, resuming current waypoint."]
         else:
-            res.success=False
-            res.message="Waypoint override already disabled!"
+            res = [False,"Waypoint override already disabled!"]
         return res
-
 
     def override_cb(self,msg):
         self.manual = True
-        if self.tfBuffer.can_transform(msg.header.frame_id,"odom",rospy.Time.now(),rospy.Duration.from_sec(2.0)):
-            rospy.loginfo("{}: New override waypoint at ({},{},{})".format(rospy.get_name(),msg.pose.pose.position.x,msg.pose.pose.position.y,msg.header.frame_id))
+        if self.tfBuffer.can_transform(msg.header.frame_id,"odom",rospy.Time.now(),rospy.Duration.from_sec(5)):
+            rospy.loginfo("{}: New override waypoint at ({},{},{})".format(rospy.get_name(),msg.pose.position.x,msg.pose.position.y,msg.header.frame_id))
             self.override = self.tfListener.transformPose("odom",msg) #TF2 FOR KINETIC JUST AIN'T WORKING
             self.update_goal(self.override)
             self.setpoint_pub.publish(self.override)
