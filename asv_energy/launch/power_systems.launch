@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<launch>
+    <node pkg="asv_energy" type="power_module.py" name="power_module" output="screen"/>
+</launch>
