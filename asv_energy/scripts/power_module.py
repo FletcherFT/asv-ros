@@ -1,7 +1,4 @@
 #!/usr/bin/python
-# Simple demo of reading each analog input from the ADS1x15 and printing it to
-# the screen.
-# Author: Tony DiCola
 # License: Public Domain
 import rospy
 import numpy as np
@@ -32,6 +29,10 @@ VOLTAGE_PIN = 3
 # Main loop.
 def main():
     rospy.init_node("adc_reader")
+    battery_type=rospy.get_param("~battery_type",0)
+    battery_volt=rospy.get_param("~battery_volt",12.0)
+    battery_design_capacity=rospy.get_param('~design_capacity',9000) # capacity of battery in mAh
+
     pub = rospy.Publisher("adc",String,queue_size=1)
     hz = rospy.Rate(10)
     rospy.loginfo('Reading ADS1x15 values, press Ctrl-C to quit...')

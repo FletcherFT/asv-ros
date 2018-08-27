@@ -15,6 +15,7 @@
   <run_depend>asv_control</run_depend>
   <run_depend>asv_control_msgs</run_depend>
   <run_depend>asv_energy</run_depend>
+  <run_depend>asv_failsafe</run_depend>
 
   <export>
     <metapackage/>

@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+	<node pkg="asv_failsafe" type="watchdog.py" name="shoreside_watchdog" output="screen">
+		<remap from="in" to="toShoreside"/>
+		<remap from="out" to="toRemote"/>
+	</node>
+	<node pkg="asv_failsafe" type="watchdog.py" name="remote_watchdog" output="screen">
+		<remap from="in" to="toRemote"/>
+		<remap from="out" to="toShoreside"/>
+	</node>
+
+</launch>
