@@ -5,6 +5,9 @@ from digi.xbee.models.mode import APIOutputMode
 import struct
 from digi.xbee.exception import InvalidPacketException, InvalidOperatingModeException, TimeoutException, XBeeException
 
+def str2bool(v):
+  return v.lower() in ("yes", "true", "t", "1")
+
 class xbee_write():
     def __init__(self):
         rospy.init_node("xbee_write")
@@ -32,8 +35,12 @@ class xbee_write():
         while not rospy.is_shutdown():
             try:
                 cmd = raw_input("Input commands, press Ctrl+D (linux) or Ctrl+Z+return (Windows) to exit, press h for list of commands:")
+                if cmd=='h':
+                    print("st[X]: start mission X=1, stop mission X=0\nrt[X]: Return home X=1, Resume Mission X=0")
+                    continue
+                if len(cmd)==3:
+                    cmd = (cmd[0],cmd[1],str2bool(cmd[2]))
                 data = struct.pack(formatspec,*cmd)
-                #data = cmd
                 rospy.loginfo("Sending explicit data to {} >> {}".format(self.remote_device.get_64bit_addr(),data))
                 self.device.send_expl_data(self.remote_device,data,self.SOURCE_ENDPOINT,self.DESTINATION_ENDPOINT,self.CLUSTER_ID,self.PROFILE_ID)
             except EOFError:

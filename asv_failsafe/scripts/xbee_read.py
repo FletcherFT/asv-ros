@@ -62,7 +62,6 @@ class xbee_read():
 
     def parse_commands(self,data):
         cmd = data[0]+data[1]
-        rospy.loginfo(data)
         if cmd == 'st':
             if data[2]:
                 rospy.loginfo("Start Mission Request")
