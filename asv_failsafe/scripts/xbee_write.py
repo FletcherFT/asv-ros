@@ -31,8 +31,9 @@ class xbee_write():
         formatspec = 'cc?'
         while not rospy.is_shutdown():
             try:
-                cmd = input("Input commands, press Ctrl+D (linux) or Ctrl+Z+return (Windows) to exit, press h for list of commands:")
-                data = struct.pack(formatspec,*cmd)
+                cmd = raw_input("Input commands, press Ctrl+D (linux) or Ctrl+Z+return (Windows) to exit, press h for list of commands:")
+                #data = struct.pack(formatspec,*cmd)
+                data = cmd
                 rospy.loginfo("Sending explicit data to {} >> {}".format(self.remote_device.get_64bit_addr(),data))
                 self.device.send_expl_data(self.remote_device,data,self.SOURCE_ENDPOINT,self.DESTINATION_ENDPOINT,self.CLUSTER_ID,self.PROFILE_ID)
             except EOFError:
@@ -41,3 +42,6 @@ class xbee_write():
             except struct.error:
                 rospy.logerr("Bad command, must contain 2 characters and a binary")
         self.device.close()
+
+if __name__=="__main__":
+    xbee_write()
