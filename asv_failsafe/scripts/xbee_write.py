@@ -32,8 +32,8 @@ class xbee_write():
         while not rospy.is_shutdown():
             try:
                 cmd = raw_input("Input commands, press Ctrl+D (linux) or Ctrl+Z+return (Windows) to exit, press h for list of commands:")
-                #data = struct.pack(formatspec,*cmd)
-                data = cmd
+                data = struct.pack(formatspec,*cmd)
+                #data = cmd
                 rospy.loginfo("Sending explicit data to {} >> {}".format(self.remote_device.get_64bit_addr(),data))
                 self.device.send_expl_data(self.remote_device,data,self.SOURCE_ENDPOINT,self.DESTINATION_ENDPOINT,self.CLUSTER_ID,self.PROFILE_ID)
             except EOFError:
