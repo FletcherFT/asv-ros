@@ -6,4 +6,3 @@ bool enable
 # Response is current status (after processing the request)
 bool enabled
 float32 current_setpoint
-
