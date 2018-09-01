@@ -7,9 +7,9 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
 )
 
-add_message_files(DIRECTORY msg FILES ThrusterComponents.msg )
+add_message_files(DIRECTORY msg FILES ThrusterComponents.msg Thrusters.msg)
 
-add_service_files(DIRECTORY srv FILES EnableControl.srv)
+add_service_files(DIRECTORY srv FILES EnableControl.srv ConfigureSteppers.srv)
 
 generate_messages(DEPENDENCIES std_msgs)
 

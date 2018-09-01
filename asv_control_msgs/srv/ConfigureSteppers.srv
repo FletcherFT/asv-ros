@@ -1,0 +1,12 @@
+# Service to control the stepper drivers.
+
+# Trigger zero, if true the steppers will zero.
+bool zero
+# Set mode, AP=true, DP=false
+bool mode
+# Set enable/disable steppers, enabled=true, disabled=false
+bool enable 
+---
+# Response is a success flag and a message
+bool success
+string message
