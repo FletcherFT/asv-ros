@@ -16,8 +16,10 @@ class ardudriver:
         self.mega = serial.Serial(mega_dev,mega_baud,timeout=0)
         self.uno = serial.Serial(uno_dev,uno_baud,timeout=0)
         self.stepper_server = rospy.Service('stepperconfig',ConfigureSteppers,self.steppers)
-        self.mega.open()
-        self.uno.open()
+        if not self.mega.is_open:
+            self.mega.open()
+        if not self.uno.is_open:
+            self.uno.open()
         rospy.Subscriber("thrusters",Thrusters,self.update)
         rospy.spin()
 
