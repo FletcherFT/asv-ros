@@ -28,9 +28,9 @@ class ardudriver:
         Handles ROS service requests for zeroing, enabling/disabling, and changing stepper mode.
         Returns success flag and message.
         """
-        formatspec="c???"
+        formatspec="cccc"
         try:
-            data = ("s",request.zero,request.mode,request.enable)
+            data = ("s",str(int(request.zero)),str(int(request.mode)),str(int(request.enable)))
             data_msg = struct.pack(formatspec,*data)
             self.uno.write(data_msg)
             rospy.loginfo("sending "+data_msg)
