@@ -29,37 +29,32 @@ class ConstrainedNonrotatableAllocation:
         self.thruster = rospy.get_param('thrusterAP')
         self.r = 3
         self.n = self.thruster['n']
-
         self.W = np.diag(self.thruster['W'])
         self.Q = np.diag(self.thruster['Q'])
-
         self.Phi = block_diag(self.W,self.Q,0)
-
-        self.R = concatenate( (zeros()))
-
-        self.R = cat( (zeros((self.n+self.r+1,self.n+2*self.r) ) , cat( (zeros((self.r+self.n,1)) ,np.array([[1]])) ) ),axis=1 )
+        self.R = concatenate( (zeros((self.r+self.n+1,self.n+2*self.r)), concatenate((zeros((self.r+self.n,1)),1))),axis=1)
         for i in range(self.n):
             alpha = self.thruster['alpha'][i]
             lx = self.thruster['lx'][i]
             ly = self.thruster['ly'][i]
             if i==0:
-                self.T=np.array([[cos(alpha)],[sin(alpha)],[lx*sin(alpha)-ly*cos(alpha)]])
+                self.T=np.array([cos(alpha),sin(alpha),lx*sin(alpha)-ly*cos(alpha)])
             else:
-                self.T=cat( ( self.T,np.array([[cos(alpha)],[sin(alpha)],[lx*sin(alpha)-ly*cos(alpha)]]) ),axis=1)
-        # EQUALITY CONSTRAINTS
-        self.A1 = cat( (self.T, -1*eye(self.n), zeros( (self.n,1))), axis=1)
-        self.C1 = cat(    (eye(self.n),zeros((self.n,2*self.r+1))),                  axis=1 )
-        # INEQUALITY CONSTRAINTS
-        self.A2 = cat( (
-                cat( (-1*eye(self.r), zeros((self.r,self.n)), zeros((self.r,1))),    axis=1),
-                cat( (eye(self.r), zeros((self.r,self.n)), zeros((self.r,1))),       axis=1),
-                cat( (eye(self.r), zeros((self.r,self.n)), ones((self.r,1))),        axis=1),
-                cat( (eye(self.r), zeros((self.r,self.n)), -ones((self.r,1))),       axis=1)))
-        self.C2 = cat( (
-                cat( (zeros((self.r,self.n)),-eye(self.r),zeros((self.r,self.r+1))),         axis=1),
-                cat( (zeros((self.r,self.n+self.r)),eye(self.r),zeros((self.r,1))),          axis=1),
-                zeros((2*self.r,self.n+2*self.r+1))))
-        
+                self.T=hstack((self.T,np.array([cos(alpha),sin(alpha),lx*sin(alpha)-ly*cos(alpha)])))
+        self.T=reshape(self.T,(self.n,self.r)).T
+        self.A1 = hstack((self.T,-eye(self.n),zeros((self.n,1))))
+        self.C1 = hstack((eye(self.n),zeros((self.n,2*self.r+1))))
+        self.A2 = block([
+            [-eye(self.r),zeros((self.r,self.n+1))],
+            [eye(self.r),zeros((self.r,self.n+1))],
+            [eye(self.r),zeros((self.r,self.n)),ones((self.r,1))],
+            [eye(self.r),zeros((self.r,self.n)),-ones((self.r,1))]
+        ])
+        self.C2 = block([
+            [zeros((self.r,self.n)),-eye(self.r),zeros((self.r,self.r+1))],
+            [zeros((self.r,self.n+self.r)),eye(self.r),zeros((self.r,1))],
+            [zeros((2*self.r,self.n+self.r*2+1))]
+        ])
         self.thrust_msg = Thrusters()
         self.thrust_pub = rospy.Publisher("thruster",Thrusters,queue_size=10)
         self.sol_msg = WrenchStamped()
