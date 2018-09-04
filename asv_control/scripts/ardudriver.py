@@ -33,7 +33,7 @@ class ardudriver:
             data = ("s",str(int(request.zero)),str(int(request.mode)),str(int(request.enable)))
             data_msg = struct.pack(formatspec,*data)
             self.uno.write(data_msg)
-            rospy.loginfo("sending "+data_msg)
+            rospy.logdebug("Uno: sending "+data_msg)
         except Exception as exc:
             response=[False,str(exc)]
         else:
@@ -43,10 +43,8 @@ class ardudriver:
     def update(self,msg):
         try:
             data_msg="s,{},{},{}".format(*msg.pwm)
-            rospy.logdebug(data_msg)
+            rospy.logdebug("Mega: sending "+data_msg)
             self.mega.write(data_msg)
-            # with self.mega as ser:
-            #     ser.write(data_msg)
         except Exception as e:
             rospy.logerr(e)
 
