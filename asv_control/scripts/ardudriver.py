@@ -33,8 +33,7 @@ class ardudriver:
             data = ("s",request.zero,request.mode,request.enable)
             data_msg = struct.pack(formatspec,*data)
             self.uno.write(data_msg)
-            # with self.uno as ser:
-            #     ser.write(data_msg)
+            rospy.lopinfo("sending "+data_msg)
         except Exception as exc:
             response=[False,str(exc)]
         else:
