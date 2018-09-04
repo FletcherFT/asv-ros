@@ -31,7 +31,7 @@ class ardudriver:
             with self.uno as ser:
                 ser.write(data_msg)
         except Exception as exc:
-            response=[False,exc]
+            response=[False,str(exc)]
         else:
             response=[True,"Stepper configuration message sent to drivers."]
         return response
