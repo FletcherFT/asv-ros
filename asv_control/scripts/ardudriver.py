@@ -16,6 +16,8 @@ class ardudriver:
         self.mega = serial.Serial(mega_dev,mega_baud,timeout=0)
         self.uno = serial.Serial(uno_dev,uno_baud,timeout=0)
         self.stepper_server = rospy.Service('stepperconfig',ConfigureSteppers,self.steppers)
+        self.mega.open()
+        self.uno.open()
         rospy.Subscriber("thrusters",Thrusters,self.update)
         rospy.spin()
 
@@ -28,8 +30,9 @@ class ardudriver:
         try:
             data = ("s",request.zero,request.mode,request.enable)
             data_msg = struct.pack(formatspec,*data)
-            with self.uno as ser:
-                ser.write(data_msg)
+            self.uno.write(data_msg)
+            # with self.uno as ser:
+            #     ser.write(data_msg)
         except Exception as exc:
             response=[False,str(exc)]
         else:
@@ -40,8 +43,9 @@ class ardudriver:
         try:
             data_msg="s,{},{},{}".format(*msg.pwm)
             rospy.logdebug(data_msg)
-            with self.mega as ser:
-                ser.write(data_msg)
+            self.mega.write(data_msg)
+            # with self.mega as ser:
+            #     ser.write(data_msg)
         except Exception as e:
             rospy.logerr(e)
 
