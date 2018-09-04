@@ -17,6 +17,7 @@ class ardudriver:
         self.uno = serial.Serial(uno_dev,uno_baud,timeout=0)
         self.stepper_server = rospy.Service('stepperconfig',ConfigureSteppers,self.steppers)
         rospy.Subscriber("thrusters",Thrusters,self.update)
+        rospy.spin()
 
     def steppers(self,request):
         """
@@ -52,7 +53,7 @@ if __name__=="__main__":
     except Exception as exc:
         rospy.logerr(exc)
     finally:
-        if h.mega.is_open():
+        if h.mega.is_open:
             h.mega.close()
-        if h.uno.is_open():
+        if h.uno.is_open:
             h.uno.close()
