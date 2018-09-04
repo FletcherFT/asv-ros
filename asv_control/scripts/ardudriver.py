@@ -48,6 +48,10 @@ if __name__=="__main__":
     try:
         h = ardudriver()
     except rospy.ROSInterruptException:
+        pass
+    except Exception as exc:
+        rospy.logerr(exc)
+    finally:
         if h.mega.is_open():
             h.mega.close()
         if h.uno.is_open():
