@@ -9,11 +9,11 @@ from asv_control_msgs.srv import ConfigureSteppers
 class ardudriver:
     def __init__(self):
         rospy.init_node('ardudriver')
-        nano_dev=rospy.get_param("~nano_device","/dev/ttyUSB2")
-        uno_dev = rospy.get_param("~uno_device","/dev/ttyACM0")
-        nano_baud=rospy.get_param("~nano_baud",115200)
+        mega_dev=rospy.get_param("~mega_device","/dev/ttyACM0")
+        uno_dev = rospy.get_param("~uno_device","/dev/ttyACM1")
+        mega_baud=rospy.get_param("~mega_baud",115200)
         uno_baud =rospy.get_param("~uno_baud",115200)
-        self.nano = serial.Serial(nano_dev,nano_baud,timeout=0)
+        self.mega = serial.Serial(mega_dev,mega_baud,timeout=0)
         self.uno = serial.Serial(uno_dev,uno_baud,timeout=0)
         self.stepper_server = rospy.Service('stepperconfig',ConfigureSteppers,self.steppers)
         rospy.Subscriber("thrusters",Thrusters,self.update)
@@ -33,22 +33,22 @@ class ardudriver:
             response=[False,exc]
         else:
             response=[True,"Stepper configuration message sent to drivers."]
+        return response
 
     def update(self,msg):
         try:
             data_msg="s,{},{},{}".format(*msg.pwm)
             rospy.logdebug(data_msg)
-            with self.nano as ser:
+            with self.mega as ser:
                 ser.write(data_msg)
         except Exception as e:
             rospy.logerr(e)
-
 
 if __name__=="__main__":
     try:
         h = ardudriver()
     except rospy.ROSInterruptException:
-        if h.nano.is_open():
-            h.nano.close()
+        if h.mega.is_open():
+            h.mega.close()
         if h.uno.is_open():
             h.uno.close()

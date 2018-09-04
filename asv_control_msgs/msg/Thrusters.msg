@@ -1,4 +1,4 @@
 Header header
-Float32[] force
-Float32[] rpm
-Int32[] pwm
+float32[] force
+float32[] rpm
+int32[] pwm
