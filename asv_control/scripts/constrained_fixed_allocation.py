@@ -2,58 +2,58 @@
 import rospy
 from geometry_msgs.msg import WrenchStamped
 from sensor_msgs.msg import JointState
-from numpy import *
+from numpy import vstack, hstack, shape, diag, array, reshape, eye, zeros, ones, block, matmul
 import numpy as np
 from scipy.linalg import block_diag
 from math import cos, sin, pi, radians, degrees
 from asv_control_msgs.msg import Thrusters
-import cvxopt
-from cvxopt import matrix
+import quadprog
 
-def cvxopt_solve_qp(P, q, G=None, h=None, A=None, b=None):
-    P = .5 * (P + P.T)  # make sure P is symmetric
-    args = [matrix(P), matrix(q)]
-    if G is not None:
-        args.extend([matrix(G), matrix(h)])
-        if A is not None:
-            args.extend([matrix(A), matrix(b)])
-    sol = cvxopt.solvers.qp(*args)
-    if 'optimal' not in sol['status']:
-        return None
-    return np.array(sol['x']).reshape((P.shape[1],))
+def quadprog_solve_qp(P, q, G=None, h=None, A=None, b=None):
+    qp_G = .5 * (P + P.T)   # make sure P is symmetric
+    qp_a = -q
+    if A is not None:
+        qp_C = -vstack([A, G]).T
+        qp_b = -hstack([b, h])
+        meq = A.shape[0]
+    else:  # no equality constraint
+        qp_C = -G.T
+        qp_b = -h
+        meq = 0
+    return quadprog.solve_qp(qp_G, qp_a, qp_C, qp_b, meq)[0]
 
 class ConstrainedNonrotatableAllocation:
     def __init__(self):
         rospy.init_node("control_allocation")
         # default is AP mode
-        self.thruster = rospy.get_param('thrusterAP')
+        self.thruster = rospy.get_param('thrusterDP')
         self.r = 3
         self.n = self.thruster['n']
-        self.W = np.diag(self.thruster['W'])
-        self.Q = np.diag(self.thruster['Q'])
-        self.Phi = block_diag(self.W,self.Q,0)
-        self.R = concatenate( (zeros((self.r+self.n+1,self.n+2*self.r)), concatenate((zeros((self.r+self.n,1)),1))),axis=1)
+        self.W = diag(self.thruster['W'])
+        self.Q = diag(self.thruster['Q'])
+        self.Phi = block_diag(self.W,self.Q)
+        self.R = zeros((self.r+self.n,self.n+2*self.r))
         for i in range(self.n):
             alpha = self.thruster['alpha'][i]
             lx = self.thruster['lx'][i]
             ly = self.thruster['ly'][i]
             if i==0:
-                self.T=np.array([cos(alpha),sin(alpha),lx*sin(alpha)-ly*cos(alpha)])
+                self.T=array([cos(alpha),sin(alpha),lx*sin(alpha)-ly*cos(alpha)])
             else:
                 self.T=hstack((self.T,np.array([cos(alpha),sin(alpha),lx*sin(alpha)-ly*cos(alpha)])))
         self.T=reshape(self.T,(self.n,self.r)).T
-        self.A1 = hstack((self.T,-eye(self.n),zeros((self.n,1))))
-        self.C1 = hstack((eye(self.n),zeros((self.n,2*self.r+1))))
+        self.A1 = hstack((self.T,-eye(self.n)))
+        self.C1 = hstack((eye(self.n),zeros((self.n,2*self.r))))
         self.A2 = block([
-            [-eye(self.r),zeros((self.r,self.n+1))],
-            [eye(self.r),zeros((self.r,self.n+1))],
-            [eye(self.r),zeros((self.r,self.n)),ones((self.r,1))],
-            [eye(self.r),zeros((self.r,self.n)),-ones((self.r,1))]
+            [-eye(self.r),zeros((self.r,self.n))],
+            [eye(self.r),zeros((self.r,self.n))],
+            [zeros((self.r,self.r)),zeros((self.r,self.n))],
+            [zeros((self.r,self.r)),zeros((self.r,self.n))]
         ])
         self.C2 = block([
-            [zeros((self.r,self.n)),-eye(self.r),zeros((self.r,self.r+1))],
-            [zeros((self.r,self.n+self.r)),eye(self.r),zeros((self.r,1))],
-            [zeros((2*self.r,self.n+self.r*2+1))]
+            [zeros((self.r,self.n)),-eye(self.r),zeros((self.r,self.r))],
+            [zeros((self.r,self.n+self.r)),eye(self.r)],
+            [zeros((2*self.r,self.n+self.r*2))]
         ])
         self.thrust_msg = Thrusters()
         self.thrust_pub = rospy.Publisher("thruster",Thrusters,queue_size=10)
@@ -63,28 +63,28 @@ class ConstrainedNonrotatableAllocation:
         rospy.spin()
 
     def wrenchCallback(self,msg):
-        tau_com = np.array([msg.wrench.force.x,msg.wrench.force.y,msg.wrench.torque.z])
-        p = hstack((tau_com,array(self.thruster['fmin']),array(self.thruster['fmax']),self.thruster['Beta']))
+        tau_com = array([msg.wrench.force.x,msg.wrench.force.y,msg.wrench.torque.z])
+        p = hstack((tau_com,array(self.thruster['fmin']),array(self.thruster['fmax'])))
+        P = self.Phi
         q = matmul(self.R,p)
-        A = A1
+        A = self.A1
         b = matmul(self.C1,p)
-        G = A2
+        G = self.A2
         h = matmul(self.C2,p)
         try:
             #solve for x = [df,da,s]
-            z = cvxopt_solve_qp(self.Phi,q,G,h,A,b)
+            z = quadprog_solve_qp(P,q,G,h,A,b)
         except ValueError as exc:
             rospy.logerr(exc)
         except Exception as exc:
             rospy.logerr(exc)
-            raise
-        rospy.loginfo(z)
+        finally:
+            pass
         thrusts = z[0:self.n]
         slacks = z[self.n:2*self.n]
-        maxthrust = z[2*self.n]
-        s = "|"+2*self.n*"\t{}\t|"
+        s = "|"+(2*self.n)*"\t{:.4}\t|"
         rospy.logdebug(s.format(*z))
-        tau_sol = mul(self.T,thrusts)
+        tau_sol = matmul(self.T,thrusts)
         self.sol_msg.header.stamp = rospy.Time.now()
         self.sol_msg.header.frame_id = "base_link"
         self.sol_msg.wrench.force.x = tau_sol[0]
