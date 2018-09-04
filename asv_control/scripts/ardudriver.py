@@ -27,7 +27,7 @@ class ardudriver:
         formatspec="c???"
         try:
             data = ("s",request.zero,request.mode,request.enable)
-            data_msg = struct.pack(formatspec,data)
+            data_msg = struct.pack(formatspec,*data)
             with self.uno as ser:
                 ser.write(data_msg)
         except Exception as exc:
