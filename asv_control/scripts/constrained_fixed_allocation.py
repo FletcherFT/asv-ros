@@ -63,12 +63,16 @@ class ConstrainedNonrotatableAllocation:
         rospy.spin()
 
     def wrenchCallback(self,msg):
-        tau_com = np.array([[msg.wrench.force.x],[msg.wrench.force.y],[msg.wrench.torque.z]])
-        p = cat( (tau_com, np.array(self.thruster['fmin'])[np.newaxis].T, np.array(self.thruster['fmax'])[np.newaxis].T,np.array([[self.thruster['Beta']]])))
+        tau_com = np.array([msg.wrench.force.x,msg.wrench.force.y,msg.wrench.torque.z])
+        p = hstack((tau_com,array(self.thruster['fmin']),array(self.thruster['fmax']),self.thruster['Beta']))
+        q = matmul(self.R,p)
+        A = A1
+        b = matmul(self.C1,p)
+        G = A2
+        h = matmul(self.C2,p)
         try:
             #solve for x = [df,da,s]
-            #z = quadprog_solve_qp(self.Phi,mul(self.R,p),self.A2,mul(self.C2,p),self.A1,mul(self.C1,p))
-            z = cvxopt_solve_qp(self.Phi,mul(self.R,p),self.A2,mul(self.C2,p),self.A1,mul(self.C1,p))
+            z = cvxopt_solve_qp(self.Phi,q,G,h,A,b)
         except ValueError as exc:
             rospy.logerr(exc)
         except Exception as exc:
