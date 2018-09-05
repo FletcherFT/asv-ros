@@ -18,7 +18,6 @@ import tf
 ## USE LOS GUIDANCE BETWEEN STATE AND SET POSITIONS (ATAN2) TO OBTAIN THE SET HEADING
 ## MAKE SURE THAT STATE ORIENTATION IS IN UTM FIRST!
 
-
 class Autopilot():
     #Autopilot controls forward speed and heading of a robot.
     #All other degrees of freedom are uncontrolled.

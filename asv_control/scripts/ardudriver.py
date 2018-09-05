@@ -15,7 +15,7 @@ class ardudriver:
         uno_baud =rospy.get_param("~uno_baud",115200)
         self.mega = serial.Serial(mega_dev,mega_baud,timeout=0)
         self.uno = serial.Serial(uno_dev,uno_baud,timeout=0)
-        self.stepper_server = rospy.Service('stepperconfig',ConfigureSteppers,self.steppers)
+        self.stepper_server = rospy.Service('~stepperconfig',ConfigureSteppers,self.steppers)
         if not self.mega.is_open:
             self.mega.open()
         if not self.uno.is_open:

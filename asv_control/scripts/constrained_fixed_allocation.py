@@ -25,14 +25,14 @@ def quadprog_solve_qp(P, q, G=None, h=None, A=None, b=None):
 
 class ConstrainedNonrotatableAllocation:
     def __init__(self):
-        rospy.init_node("control_allocation")
+        rospy.init_node("allocator")
         # default is AP mode
         self.qpsetup(True)
         self.thrust_msg = Thrusters()
         self.thrust_pub = rospy.Publisher("thrusters",Thrusters,queue_size=10)
         self.sol_msg = WrenchStamped()
         self.sol_pub = rospy.Publisher("tau_sol",WrenchStamped,queue_size=10)
-        self.mode_server = rospy.Service('modeconfig',ConfigureSteppers,self.mode)
+        self.mode_server = rospy.Service('~modeconfig',ConfigureSteppers,self.mode)
         rospy.Subscriber("tau_com",WrenchStamped,self.wrenchCallback)
         rospy.spin()
 

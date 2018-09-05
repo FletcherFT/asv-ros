@@ -31,7 +31,7 @@ class PoseControllerNode():
         self.enabled = False
         self.last_feedback = Odometry()
         self.last_feedback_time = rospy.Time.now()
-        self.enable_server = rospy.Service('enable', asv_control_msgs.srv.EnableControl, self.enable)
+        self.enable_server = rospy.Service('~enable', asv_control_msgs.srv.EnableControl, self.enable)
         self.pids = []
         for i in range(6):
             self.pids.append(Pid(0.0, 0.0, 0.0,integral_min=-0.1,integral_max=0.1,output_max=1.0))
@@ -190,7 +190,7 @@ class PoseControllerNode():
             self.pub.publish(wrench_output)
 
 if __name__ == "__main__":
-    rospy.init_node('dynamic_positioning')
+    rospy.init_node('dynamic_position')
     try:
         frequency = rospy.get_param("~frequency", 400.0)
         rospy.loginfo('Starting dynamic pose control with %f Hz.\n', frequency)
