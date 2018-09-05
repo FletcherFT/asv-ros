@@ -9,16 +9,18 @@ from asv_control_msgs.srv import ConfigureSteppers
 class ardudriver:
     def __init__(self):
         rospy.init_node('ardudriver')
+        self.test = rospy.get_param("~test",False)
         mega_dev=rospy.get_param("~mega_device","/dev/ttyACM0")
         uno_dev = rospy.get_param("~uno_device","/dev/ttyACM1")
         mega_baud=rospy.get_param("~mega_baud",115200)
         uno_baud =rospy.get_param("~uno_baud",115200)
-        self.mega = serial.Serial(mega_dev,mega_baud,timeout=0)
-        self.uno = serial.Serial(uno_dev,uno_baud,timeout=0)
+        if not self.test:
+            self.mega = serial.Serial(mega_dev,mega_baud,timeout=0)
+            self.uno = serial.Serial(uno_dev,uno_baud,timeout=0)
         self.stepper_server = rospy.Service('~stepperconfig',ConfigureSteppers,self.steppers)
-        if not self.mega.is_open:
+        if not self.test and not self.mega.is_open:
             self.mega.open()
-        if not self.uno.is_open:
+        if not self.test and not self.uno.is_open:
             self.uno.open()
         rospy.Subscriber("thrusters",Thrusters,self.update)
         rospy.spin()
@@ -32,7 +34,8 @@ class ardudriver:
         try:
             data = ("s",str(int(request.zero)),str(int(request.mode)),str(int(request.enable)))
             data_msg = struct.pack(formatspec,*data)
-            self.uno.write(data_msg)
+            if not self.test:
+                self.uno.write(data_msg)
             rospy.logdebug("Uno: sending "+data_msg)
         except Exception as exc:
             response=[False,str(exc)]
@@ -44,7 +47,8 @@ class ardudriver:
         try:
             data_msg="s,{},{},{}".format(*msg.pwm)
             rospy.logdebug("Mega: sending "+data_msg)
-            self.mega.write(data_msg)
+            if not self.test:
+                self.mega.write(data_msg)
         except Exception as e:
             rospy.logerr(e)
 
@@ -56,7 +60,7 @@ if __name__=="__main__":
     except Exception as exc:
         rospy.logerr(exc)
     finally:
-        if h.mega.is_open:
+        if not h.test and h.mega.is_open:
             h.mega.close()
-        if h.uno.is_open:
+        if not h.test and h.uno.is_open:
             h.uno.close()

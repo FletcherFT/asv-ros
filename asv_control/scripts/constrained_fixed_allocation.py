@@ -33,7 +33,7 @@ class ConstrainedNonrotatableAllocation:
         self.sol_msg = WrenchStamped()
         self.sol_pub = rospy.Publisher("tau_sol",WrenchStamped,queue_size=10)
         self.mode_server = rospy.Service('~modeconfig',ConfigureSteppers,self.mode)
-        rospy.Subscriber("tau_com",WrenchStamped,self.wrenchCallback)
+        rospy.Subscriber("tau_com/out",WrenchStamped,self.wrenchCallback)
         rospy.spin()
 
     def qpsetup(self,mode):

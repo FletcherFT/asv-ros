@@ -1,8 +1,8 @@
 #!/usr/bin/python
 import rospy
 import dynamic_reconfigure.server
-import asv_control_msgs.srv
 from asv_control.cfg import PoseControllerConfig
+from std_srvs.srv import SetBool
 from tf import transformations as transform
 from pid import Pid
 from geometry_msgs.msg import WrenchStamped
@@ -31,21 +31,21 @@ class PoseControllerNode():
         self.enabled = False
         self.last_feedback = Odometry()
         self.last_feedback_time = rospy.Time.now()
-        self.enable_server = rospy.Service('~enable', asv_control_msgs.srv.EnableControl, self.enable)
+        self.enable_server = rospy.Service('~enable', SetBool, self.enable)
         self.pids = []
         for i in range(6):
             self.pids.append(Pid(0.0, 0.0, 0.0,integral_min=-0.1,integral_max=0.1,output_max=1.0))
         self.server = dynamic_reconfigure.server.Server(PoseControllerConfig, self.reconfigure)
         
-        self.pub = rospy.Publisher('tau_com', WrenchStamped,queue_size=1)
+        self.pub = rospy.Publisher('tau_com/DP', WrenchStamped,queue_size=1)
         rospy.Subscriber('pose_com', PoseStamped, self.setpointCallback)
         
         period = rospy.rostime.Duration.from_sec(1.0/frequency)
         self.timer = rospy.Timer(period, self.updateOutput)
         
-        rospy.Subscriber('state', Odometry, self.odometryCallback)
+        rospy.Subscriber('odometry/filtered', Odometry, self.odometryCallback)
         rospy.loginfo('Listening for pose feedback to be published on '
-                      '%s...', rospy.resolve_name('state'))
+                      '%s...', rospy.resolve_name('odometry/filtered'))
         rospy.loginfo('Waiting for setpoint to be published on '
                       '%s...', rospy.resolve_name('pose_com'))
 
@@ -54,18 +54,17 @@ class PoseControllerNode():
         Handles ROS service requests for enabling/disabling control.
         Returns current enabled status and setpoint.
         """
-        response = asv_control_msgs.srv.EnableControlResponse()
-        if request.enable:
+        if request.data:
             if self.isFeedbackValid():
                 self.enabled = True
                 self.setpoint_valid = True
-                response.enabled = True
+                response = [True,"DP Controller Enabled"]
             else:
                 rospy.logerr("Cannot enable pose control without valid feedback!")
-                response.enabled = False
+                response.enabled = [False,"Cannot enable pose control without valid feedback!"]
         else:
             self.enabled = False
-            response.enabled = False
+            response = [False,"DP Controller Disabled"]
         return response
 
     def reconfigure(self, config, level):
@@ -102,8 +101,8 @@ class PoseControllerNode():
             self.setpoint_valid = True
         self.setSetpoint(setpoint.pose)
         if not self.enabled:
-            rospy.logwarn("PIDs not enabled, please call 'rosservice call %s true'",rospy.resolve_name('enable'))
-        rospy.loginfo('Changed setpoint to: %s', setpoint.pose)
+            rospy.logwarn("{}: PIDs not enabled, please call 'rosservice call {} true'".format(rospy.get_name(),rospy.resolve_name('~enable')))
+        rospy.loginfo('{}: Changed setpoint to: {}'.format(rospy.get_name(), setpoint.pose))
 
     def setSetpoint(self, pose):
         #these are the setpoints
@@ -186,13 +185,13 @@ class PoseControllerNode():
                 wrench_output.wrench.torque.y = 0
                 wrench_output.wrench.torque.z = 0
             wrench_output.header.stamp = rospy.Time.now()
-            wrench_output.header.frame_id = 'base_link'
+            wrench_output.header.frame_id = 'DP'
             self.pub.publish(wrench_output)
 
 if __name__ == "__main__":
     rospy.init_node('dynamic_position')
     try:
-        frequency = rospy.get_param("~frequency", 400.0)
+        frequency = rospy.get_param("~frequency", 20.0)
         rospy.loginfo('Starting dynamic pose control with %f Hz.\n', frequency)
         node = PoseControllerNode(frequency)
         rospy.spin()

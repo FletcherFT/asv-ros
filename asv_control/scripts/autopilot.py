@@ -49,7 +49,7 @@ class Autopilot():
         for i in range(2):
             self.pids.append(Pid(0.0, 0.0, 0.0,integral_min=-0.1,integral_max=0.1,output_max=1.0))
         self.server = dynamic_reconfigure.server.Server(AutopilotConfig, self.reconfigure)
-        self.pub = rospy.Publisher('tau_com',WrenchStamped,queue_size=10)
+        self.pub = rospy.Publisher('tau_com/AP',WrenchStamped,queue_size=10)
         period = rospy.Duration.from_sec(1.0/frequency)
         self.timer = rospy.Timer(period,self.updateOutput)
         rospy.Subscriber('pose_com',PoseStamped,self.setpointCallback)
@@ -57,6 +57,7 @@ class Autopilot():
         rospy.loginfo("""Listening for pose feedback to be published on {}...\n
         Waiting for setpoint to be published on {}...\n
         Enable/Disable controller via {}...""".format(rospy.resolve_name('odometry/filtered'),rospy.resolve_name('pose_com'),rospy.resolve_name('~enable')))    
+        rospy.spin()
 
     def enable(self,request):
         """
@@ -100,7 +101,7 @@ class Autopilot():
         if not self.enabled:
             rospy.logwarn("Autopilot PIDs not enabled, please call 'rosservice call {} true'".format(rospy.resolve_name('enable')))
             return
-        rospy.loginfo('Changed setpoint to: {}'.format(setpoint))
+        rospy.loginfo('{}: Changed setpoint to: {}'.format(rospy.get_name(),setpoint))
 
     def setSetpoint(self, pose):
         #these are the setpoints
@@ -175,12 +176,11 @@ class Autopilot():
                 wrench_output.wrench.torque.y = 0
                 wrench_output.wrench.torque.z = 0
             wrench_output.header.stamp = rospy.Time.now()
-            wrench_output.header.frame_id = 'base_link'
+            wrench_output.header.frame_id = 'AP'
             self.pub.publish(wrench_output)
 
 if __name__ == "__main__":
     try:
         Autopilot()
-        rospy.spin()
     except rospy.ROSInterruptException:
         pass

@@ -2,6 +2,11 @@
 <launch>
     <rosparam command="load" file="$(find asv_control)/params/thrustersAP.yaml"/>
     <rosparam command="load" file="$(find asv_control)/params/thrustersDP.yaml"/>
+    <node pkg="asv_control" type="ardudriver.py" name="ardudriver" output="screen">
+        <param name="test" value="true"/>
+    </node>
     <node pkg="asv_control" type="constrained_fixed_allocation.py" name="allocator" output="screen"/>
-    <node pkg="topic_tools" type="mux" name="control_topic_mux" args="tau_com override_tau_com AP_tau_com DP_tau_com" output="screen"/>
+    <node pkg="topic_tools" type="mux" name="control_topic_mux" args="tau_com/out tau_com/override tau_com/AP tau_com/DP" output="screen">
+        <remap from="mux" to="control_topic_mux"/>
+    </node>
 </launch>
