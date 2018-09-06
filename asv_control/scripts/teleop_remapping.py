@@ -14,11 +14,27 @@ def joyCallback(msg,args):
     outputMsg.header.frame_id="override"
     outputMsg.header.stamp = rospy.Time.now()
     # map positive X to forward motion
-    outputMsg.wrench.force.x = interpolate(-msg.axes[4],-1023,0,-20,20)
+    xorientation=-1
+    xcenter = 515
+    xmin=xorientation*1023
+    xmax=xorientation*0
+    x = xorientation*msg.axes[4]
+    if x<xcenter:
+        outputMsg.wrench.force.x = interpolate(x,xmin,xcenter,-20,0)
+    else:
+        outputMsg.wrench.force.x = interpolate(x,xcenter,xmax,0,20)
     # map positive Y to port strafing motion on slider 2
-    outputMsg.wrench.force.y = interpolate(msg.axes[0],54,1024,-3,3)
+    #outputMsg.wrench.force.y = interpolate(msg.axes[0],54,1024,-3,3)
     # map poistive Nz to CCW motion
-    outputMsg.wrench.torque.z = interpolate(msg.axes[3],0,1023,-5,5)
+    zorientation=1
+    zcenter = 499
+    zmin=zorientation*0
+    zmax=xorientation*1023
+    z = zorientation*msg.axes[3]
+    if z<zcenter:
+        outputMsg.wrench.torque.z = interpolate(z,zmin,zcenter,-5,0)
+    else:
+        outputMsg.wrench.torque.z = interpolate(z,zcenter,zmax,0,5)
     args.publish(outputMsg)
 
 def main():
