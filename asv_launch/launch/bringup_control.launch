@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+	<!-- BRINGUP HARDWARE DRIVERS -->
+	<include file="$(find asv_control)/launch/hardware_level_control.launch"/>
+	<!-- BRINGUP PID CONTROLLERS AND MANAGER -->
+	<include file="$(find asv_control)/launch/low_level_control.launch"/>
+</launch>
