@@ -34,8 +34,8 @@ class xbee_read():
                 rospy.logerr("Bad Checksum")
             except XBeeException as exc:
                 rospy.logerr("XBee Error!: {}".format(exc))
-            except rospy.ROSInterruptException:
-                rospy.logwarn("Shutting down!")
+            # except rospy.ROSInterruptException:
+            #     rospy.logwarn("Shutting down!")
             else:
                 #rospy.loginfo("Cycle")
                 if data_msg:
@@ -48,18 +48,19 @@ class xbee_read():
 
     def handle_data(self,data_msg):
         if len(data_msg.data)==16:
-            formatspec = 'cchhhhh????'
+            formatspec = '>cchhhhh????'
             self.parse_joystick(struct.unpack(formatspec,data_msg.data))
         elif len(data_msg.data)==3:
             formatspec = 'cc?'
             self.parse_commands(struct.unpack(formatspec,data_msg.data))
 
     def parse_joystick(self,data):
-        self.joy_msg.axes = data[5:7]
+        rospy.loginfo(data[2:7])
+        self.joy_msg.axes = data[2:7]
         self.joy_msg.buttons = data[7:]
         rospy.logdebug(data)
         self.joy_msg.header.stamp = rospy.Time.now()
-        self.joy_msg.header.frame_id = "rc"
+        self.joy_msg.header.frame_id = "override"
         self.pub.publish(self.joy_msg)
 
     def parse_commands(self,data):
@@ -78,4 +79,8 @@ class xbee_read():
             rospy.logwarn("Unknown Command: {}".format(cmd))
 
 if __name__ == '__main__':
-    xbee_read()
+    try:
+        a=xbee_read()
+    except rospy.ROSInterruptException:
+        if a.device.is_open:
+            a.device.close()
