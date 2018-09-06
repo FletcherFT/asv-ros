@@ -9,11 +9,11 @@ from digi.xbee.exception import InvalidPacketException, InvalidOperatingModeExce
 class xbee_read():
     def __init__(self):
         rospy.init_node("xbee_read")
-        PORT = rospy.get_param("~device","/dev/ttyUSB0")
+        PORT = rospy.get_param("~device","/dev/ttyUSB1")
         BAUD_RATE = rospy.get_param("~baud",115200)
         self.joy_msg = Joy()
         self.device = ZigBeeDevice(PORT, BAUD_RATE)
-        hz = rospy.Rate(100)
+        hz = rospy.Rate(10)
         self.pub = rospy.Publisher("joy",Joy,queue_size=10)
         try:
             self.device.open()
@@ -26,6 +26,7 @@ class xbee_read():
         rospy.on_shutdown(self.shutdown_handle)
         while not rospy.is_shutdown():
             try:
+                # if self.device._serial_port.is_open:
                 data_msg = self.device.read_expl_data()
             except TimeoutException:
                 rospy.logerr("Timeout!")
@@ -36,9 +37,10 @@ class xbee_read():
             except rospy.ROSInterruptException:
                 rospy.logwarn("Shutting down!")
             else:
+                #rospy.loginfo("Cycle")
                 if data_msg:
                     self.handle_data(data_msg)
-                hz.sleep()
+            hz.sleep()
 
     def shutdown_handle(self):
         if self.device._is_open:
