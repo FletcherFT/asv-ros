@@ -135,14 +135,11 @@ class ConstrainedNonrotatableAllocation:
     def forceToPWM(self,thrusts):
         pwm = [0,0,0]
         for idx,i in enumerate(thrusts):
-            if i>0:
-                pwm[idx]=self.kpwm[idx]*i**2#+self.deadband[idx]
-                if abs(pwm[idx])<self.deadband[idx]:
-                    pwm[idx]=0
-            else:
-                pwm[idx]=-self.kpwm[idx]*i**2#-self.deadband[idx]
-                if abs(pwm[idx])<self.deadband[idx]:
-                    pwm[idx]=0
+            pwm[idx]=-0.3362*abs(i)**2+13.1989*abs(i)+59.0382
+            if abs(i)<self.deadband[idx]:
+                pwm[idx]=0
+            if i<0:
+                pwm[idx]*=-1
         return pwm
 
 if __name__ == "__main__":
