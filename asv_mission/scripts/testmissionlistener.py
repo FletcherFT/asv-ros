@@ -1,13 +1,11 @@
 #!/usr/bin/python
-import sys
-print(sys.path)
-
 import rospy
 from asv_mission.msg import Plan, Task
 from missionplanning import hierarchy
 
 def receivePlanCallback(plan_msg):
     plan = hierarchy.Hierarchy(plan_msg)
+    print plan._current
     print plan.getTask()
 
 def main():
