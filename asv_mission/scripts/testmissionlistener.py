@@ -5,8 +5,12 @@ from missionplanning import hierarchy
 
 def receivePlanCallback(plan_msg):
     plan = hierarchy.Hierarchy(plan_msg)
-    print plan._current
-    print plan.getTask()
+    while True:
+        task = plan.getTask()
+        print(task)
+        if task.action == "root":
+            break
+    print "Plan complete."
 
 def main():
     rospy.init_node("testmissionlistener")

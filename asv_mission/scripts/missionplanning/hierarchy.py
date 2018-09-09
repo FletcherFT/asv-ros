@@ -20,47 +20,40 @@ class Hierarchy():
         self._complete = []
         self._root = root
         self._current = root
-        self._findLowest(True)
+        self._flag = True
 
     def getTask(self):
-        if self._current != self._root:
-            self._complete.append(self._current)
-        if self._findLowest()<0:
-            return self.plan[self._root]
+        if self._flag:
+            # this is the first time the getTask function has been called for this plan, don't append anything to self._complete
+            self._findLowest()
+            self._flag=False
         else:
-            return self.plan[self._current]
+            self._complete.append(self._current)
+            self._findLowest()
+        return self.plan[self._current]
 
-    def _findLowest(self,flag=False):
-        # if first time, select first child of root (if there is one)
-        if flag:
-            if self.plan[self._root].children:
-                self._current = self.plan[self._root].children[0]
-            else:
-                return
-        go_up = False
+    def _findLowest(self):
         while True:
-            # if we need to go up a layer, it means the task is done.
-            if go_up:
-                self._current = self.plan[self._current].parent
-            # get the children of the current task
-            layer = self.plan[self._current].children
-            # if there's children, find one that hasn't been completed
-            if layer:
-                for i in layer:
-                    if not i in self._complete:
-                        self._current=i
-                        go_up = False
+            children = self.plan[self._current].children
+            if children:
+                # go through every child and find one that hasn't been completed
+                flag=False
+                for child in children:
+                    if not child in self._complete:
+                        # if there's a child that isn't completed, go down a level
+                        self._current=child
+                        flag=True
                         break
-#TODO UNTANGLE THIS
-                    else:
-                        if not self._current in self._complete:
-                            return
-                        else:
-                            go_up=True
-            # if there's no children and it's not on the list, this is our current primitive!
+                if flag:
+                    # if a child was found that hasn't been completed yet, select it and see if it has any children
+                    continue
+                else:
+                    # otherwise, all the children are complete, therefore this current task is ready to be selected
+                    return
             else:
+                # this task has no children, so check if it has been completed
                 if not self._current in self._complete:
                     return
                 else:
-                    go_up=True
-        print("Cycle")
+                    # the task has been completed, so go up a level
+                    self._current=self.plan[self._current].parent

@@ -37,7 +37,6 @@ class guidance:
         # Flow Control
         self.manual = True #switch for automated or manual override guidance
         self.notified = False #switch for notifying the operator/supervisor when the task is reached
-        #self.mode = 0 # 0 for autopilot, 1 for dynamic positioning
 
         # msg containers
         self.override = PoseStamped()
@@ -52,7 +51,6 @@ class guidance:
         rospy.spin()
 
     def handle_resume(self,req):
-        #es = Trigger()
         if self.manual:
             self.manual=False
             res = [True,"Waypoint override disabled, resuming current waypoint."]
