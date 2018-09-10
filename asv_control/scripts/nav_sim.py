@@ -2,158 +2,217 @@
 # license removed for brevity
 import rospy
 from nav_msgs.msg import Odometry, Path
-from geometry_msgs.msg import WrenchStamped
-from geometry_msgs.msg import PoseWithCovarianceStamped
+from sensor_msgs.msg import Imu, NavSatFix
+from geometry_msgs.msg import WrenchStamped, QuaternionStamped, PoseStamped
 from math import cos, sin
 import tf
-import fossen
-import numpy as np
-inv = np.linalg.inv
-mul = np.matmul
+from simulation import fossen
+from numpy import *
+inv = linalg.inv
+from pygeodesy import utm
 
 class NavSimNode():
     def __init__(self):
-        #inertial matrix
-        self.M_iner = np.diag([15.0,15.0,15.0,100.0,100.0,100.0])
-        if rospy.has_param('Mi'):
-            self.M_iner = rospy.get_param('Mi')
-            if len(self.M_iner)<7:
-                self.M_iner = np.diag(self.M_iner)
-            else:
-                self.M_iner = np.reshape(self.M_iner,(6,6))
-        self.M_addm = np.zeros([6,6])
-        #added mass matrix
-        if rospy.has_param('Ma'):
-            self.M_addm = rospy.get_param('Ma')
-            if len(self.M_addm)<7:
-                self.M_addm = np.diag(self.M_addm)
-            else:
-                self.M_addm = np.reshape(self.M_addm,(6,6))
-        #initialise acceleration vector
-        self.a = np.zeros(6)
-        #velocity terms
-        #coriolis and centripetal matrix due to inertia (this is a function of the inertial matrix and velocity)
-        self.C_iner = np.zeros([6,6])
-        #coriolis and centripetal matrix due to added mass (this is a function of the added mass matrix and vel)
-        self.C_addm = np.zeros([6,6])
-        #total damping matrix (potential + skin + wave damping coefficients)
-        self.D = np.diag([10.33,10.7,0.0,0.0,0.0,10.9])
-        if rospy.has_param('D'):
-            self.D = rospy.get_param('D')
-            if len(self.D)<7:
-                self.D = np.diag(self.D)
-            else:
-                self.D = np.reshape(self.D,(6,6))
-        #initialise velocity vector
-        self.v = np.zeros(6)
+        # let's make this a 3DoF simulator to begin with.
+        # the goal is to work in odom and simulate the dynamics of a 3DoF vehicle (X,Y,Yaw), and publish noisy GPS and IMU measurements from them.
+        rospy.init_node("simulator")
 
-        #position terms
-        self.G = np.zeros(6)
-        self.B = 150.
-        self.W = -150.
-        self.p = np.zeros(6)
+        # set the acceleration and velocity state vectors to 0
+        self._a = zeros((3,1))
+        self._v = zeros((3,1))
+
+        # Initial GPS and IMU measurements
+        self.Theta_en = rospy.get_param('~startingGPS',[-41.400419,147.125098])
+        self.Theta_nb = rospy.get_param('~startingIMU',[0.0,pi/4,0.0])
+
+        self.tfListener = tf.TransformListener()
+        
+        # Convert the GPS position into odom coordinates from utm frame
+        self._utm = utm.toUtm(self.Theta_en[0],self.Theta_en[1])
+        utmpoint = PointStamped()
+        utmpoint.header.frame_id="utm"
+        utmpoint.header.stamp = rospy.Time.now()
+        utmpoint.point.x = self._utm.Easting
+        utmpoint.point.y = self._utm.Northing
+        utmpoint.point.z = 0.0
+        odom_p = self._pointToOdom(utmpoint)
+        if odom_p==-1:
+            return
+
+        self._eta_odom = array((odom_p.point.x,odom_p.point.y,self.Theta_nb[2]))
+
+        self._m = rospy.get_param('~mass',15.0)
+        self._xg = rospy.get_param('~xg',-0.1)
+        self._Iz = rospy.get_param('~Iz',4.0)
+        self._Xu = rospy.get_param('~Xu',3.08)
+        self._Xudot = rospy.get_param('~Xudot',1.5)
+        self._Yv = rospy.get_param('~Yv',20.0)
+        self._Yvdot = rospy.get_param('~Yvdot',0.003)
+        self._Yr = rospy.get_param('~Yr',0.15)
+        self._Yrdot = rospy.get_param('~Yrdot',0.5)
+        self._Nv = rospy.get_param('~Nv',-0.01)
+        self._Nr = rospy.get_param('~Nr',0.88)
+        self._Nrdot = rospy.get_param('~Nrdot',1.2)
+
+        # MASS TERMS
+        #inertial matrix Mrb = reshape([m,0,0,0,m,m*xg,0,m*xg,Iz])
+        self.M_rb = rospy.get_param("~inertia",[self._m,0,0,0,self._m,self._m*self._xg,0,self._m*self._xg,self._Iz])
+        if len(self.M_rb) == 3:
+            self.M_rb = diag(self.M_rb)
+        elif len(self.M_rb)==9:
+            self.M_rb = reshape(self.M_rb,(3,3))
+        else:
+            rospy.logerr("DoF Error: Inertia matrix has a bad length, must be of length 3 or 9.")
+            return
+        #added mass matrix Ma = reshape([-Xudot,0,0,0,-Yvdot,-Yrdot,0,-Yrdot,-Nrdot])
+        self.M_a = rospy.get_param("~added_mass",[-self._Xudot,0,0,0,-self._Yvdot,-self._Yrdot,0,-self._Yrdot,-self._Nrdot])
+        if len(self.M_a) == 3:
+            self.M_a = diag(self.M_a)
+        elif len(self.M_a)==9:
+            self.M_a = reshape(self.M_a,(3,3))
+        else:
+            rospy.logerr("DoF Error: Added mass matrix has a bad length, must be of length 3 or 9.")
+            return
+        # the mass matrix is the sum of the above two parameters
+        self.M = self.M_rb+self.M_a
+
+        #Initialise coriolis and centripetal matrix due to inertia (velocity is zero)
+        self.C_rb = zeros((3,3)
+        #Initialise coriolis and centripetal matrix due to added mass (this is a function of the added mass matrix and vel)
+        self.C_a = zeros((3,3)
+
+        #total damping matrix (potential + skin + wave damping coefficients)
+        self.D = rospy.get_param("~damping",[-self._Xu,0,0,0,-self._Yv,-self._Yr,0,-self._Nv,-self._Nr)
+        if len(self.D) == 3:
+            self.D = diag(self.D)
+        elif len(self.D) == 9:
+            self.D = reshape(self.D,(3,3))
+        else:
+            rospy.logerr("DoF Error: Daming matrix has a bad length, must be of length 3 or 9.")
+            return
 
         #external force terms
-        self.tau = np.zeros(6)
+        self.tau_rb = zeros((3,1))
 
-        #rospy subscribers + publisher
-        rospy.Subscriber('wrench',WrenchStamped,self.wrenchCallback)
-        rospy.Subscriber('initialpose',PoseWithCovarianceStamped,self.setCallback)
-        self.odom_pub = rospy.Publisher('odom', Odometry, queue_size=1)
-        self.odom_broadcaster = tf.TransformBroadcaster()
-        frequency = rospy.get_param('~frequency',400.0)
-        self.period = rospy.rostime.Duration.from_sec(1.0/frequency)
-        self.timer = rospy.Timer(self.period, self.kinematics)
+        #thruster control forces
+        self.tau_sol = zeros((3,1))
 
-    def setCallback(self,data):
-        self.a = np.zeros(6)
-        self.v = np.zeros(6)
-        quaternion = (
-        data.pose.pose.orientation.x,
-        data.pose.pose.orientation.y,
-        data.pose.pose.orientation.z,
-        data.pose.pose.orientation.w)
-        euler = tf.transformations.euler_from_quaternion(quaternion)        
-        self.p = np.array(
-                [data.pose.pose.position.x,
-                data.pose.pose.position.y,
-                data.pose.pose.position.z,
-                euler[0],
-                euler[1],
-                euler[2]])
+        frequency = rospy.get_param('~frequency',100.0)
+        rospy.Timer(rospy.Duration.from_sec(1.0/frequency),self.kinematics)
+        rospy.Timer(rospy.Duration.from_sec(1.0/5.0),self.pub_gps)
+        rospy.Timer(rospy.Duration.from_sec(1.0/30.0),self.pub_imu)
+
+        rospy.Subscriber('tau_sol',WrenchStamped,self.wrenchCallback)
+        rospy.Subscriber('set_pose',PoseStamped,self.setPoseCallback)
+
+        self._gps = NavSatFix()
+        self._gps.status.status = 0
+        self._gps.status.service = 1
+        self._gps.latitude = self.Theta_en[0]
+        self._gps.longitude = self.Theta_en[1]
+        self._gps.altitude = 0.0
+        self._gps.position_covariance=[1e-9,1e-9,1e-9,1e-9,1e-9,1e-9,1e-9,1e-9,1e-9]
+        self._gps.position_covariance_type=3
+
+        self._imu = Imu()
+
+        self.gps_pub = rospy.Publisher('gps/fix',NavSat,queue_size=10)
+        self.imu_pub = rospy.Publisher('imu/data',Imu,queue_size=10)
+        rospy.spin()
+
+    def _poseToUtm(self,pose):
+        try:
+            return = self.tfListener.transformPose('utm',pose)
+        except Exception as exc:
+            rospy.logerr(exc)
+            return -1
+
+    def _pointToOdom(self,point):
+        try:
+            return = self.tfListener.transformPoint('odom',point)
+        except Exception as exc:
+            rospy.logerr(exc)
+            return -1
 
     def wrenchCallback(self,wrench):
         #calculate acceleration from model
         self.tau[0] = wrench.wrench.force.x
         self.tau[1] = wrench.wrench.force.y
-        self.tau[2] = wrench.wrench.force.z
-        self.tau[3] = wrench.wrench.torque.x
-        self.tau[4] = wrench.wrench.torque.y
-        self.tau[5] = wrench.wrench.torque.z
-
-        #update the coriolis matrix from the old velocity
-        self.C_iner = fossen.m2c(self.M_iner,self.v)
-        #update the added mas matrix from the old velocity
-        self.C_addm = fossen.m2c(self.M_addm,self.v)
-        #update Gvector from old position TODO:  see fossen.gvect for what needs to be calculated
-        #self.G = fossen.gvect(self.W,self.B,self.p[1],self.p[0],(0.,0.,0.),(0.1,0.0,-0.05))
+        self.tau[2] = wrench.wrench.torque.z     
 
     def kinematics(self,event):
         #combine velocity and acceleration terms
-        M = self.M_iner+self.M_addm
-        C = self.C_addm + self.C_iner + self.D
-        G = self.G
-        #calculate the fixed acceleration (based off old velocity and position)
-        self.a = mul(inv(M),self.tau-mul(C,self.v)-mul(G,self.p))
+        dt = (rospy.Time.now()-event.last_real).to_sec
 
-        #calculate the time interval
-        dt = self.period.to_sec()
+        #update the coriolis matrix from the old velocity
+        self.C_rb = fossen.updateCrb(self._v,self._m,self._xg)
+        #update the added mas matrix from the old velocity
+        self.C_a = fossen.updateCa(self._v,self._Xudot,self._Yvdot,self._Yrdot)
+
+        N = self.C_a + self.C_rb + self.D
+
+        #calculate the fixed acceleration (based off old velocity and position)
+        self._a = mul(inv(M),self.tau_sol+self.tau_wind+self.tau_wave-mul(N,self._v))
+
         #update the velocity vector (body fixed) from new acceleration
-        self.v = self.v+self.a*dt
+        self._v += self._a*dt
 
         #calculate the new orientation
-        self.p[3:] = self.p[3:]+self.v[3:]*dt
+        self._eta_odom[2] += self._v[2]*dt
 
         #obtain the rotation matrix by rotating through the euler angles
-        R=tf.transformations.euler_matrix(self.p[5],self.p[4],self.p[3],'szyx')
+        R=tf.transformations.euler_matrix(0.0,0.0,self._eta_odom[2],'szyx')
 
         #update the position
-        self.p[0:3]=self.p[0:3]+(mul(R[0:3,0:3],self.v[0:3]))*dt
-        #get the orientation as a quaternion
-        odom_quat = tf.transformations.quaternion_from_euler(self.p[3],self.p[4],self.p[5])
-        #The odometry transformation (odom -> base_link)
-        self.odom_broadcaster.sendTransform((self.p[0],self.p[1],self.p[2]),odom_quat,rospy.Time.now(),'base_link','odom')
+        self._eta_odom[0:2]+=(mul(R[0:2,0:2],self._v[0:2]))*dt
 
-        #The odometry message
-        odom = Odometry()
-        odom.header.stamp = rospy.Time.now()
-        odom.header.frame_id = 'odom'
-        odom.child_frame_id = 'base_link'
+        # convert to utm
+        pose = PoseStamped()
+        pose.header.frame_id="odom"
+        pose.header.stamp = rospy.Time.now()
+        pose.pose.position.x=self._eta_odom[0]
+        pose.pose.position.y=self._eta_odom[1]
+        pose.pose.orientation=Quaternion(*tf.transformations.quaternion_from_euler(0,0,self._eta_odom[2],'sxyz'))
+        pose = self._poseToUtm(pose)
+        if pose == -1:
+            return
 
-        #set odometry position
-        odom.pose.pose.position.x = self.p[0]
-        odom.pose.pose.position.y = self.p[1]
-        odom.pose.pose.position.z = self.p[2]
-        odom.pose.pose.orientation.x = odom_quat[0]
-        odom.pose.pose.orientation.y = odom_quat[1]
-        odom.pose.pose.orientation.z = odom_quat[2]
-        odom.pose.pose.orientation.w = odom_quat[3]
+        # send to GPS
+        utmstr = "{} {} {} {}".format(self._utm.zone,self._utm.hemisphere,pose.position.x,pose.position.y)
+        utmpoint = utm.parseUTM(utmstr)
+        latlong = utmpoint.toLatLong()
+        self._gps.status.status = 0
+        self._gps.status.service = 1
+        self._gps.latitude = latlong[0]
+        self._gps.longitude = latlong[1]
+        self._gps.altitude = 0.0
+        self._gps.position_covariance=[1e-9,1e-9,1e-9,1e-9,1e-9,1e-9,1e-9,1e-9,1e-9]
+        self._gps.position_covariance_type=3
 
-        #set odometry velocity
-        odom.twist.twist.linear.x = self.v[0]
-        odom.twist.twist.linear.y = self.v[1]
-        odom.twist.twist.linear.z = self.v[2]
-        odom.twist.twist.angular.x = self.v[3]
-        odom.twist.twist.angular.y = self.v[4]
-        odom.twist.twist.angular.z = self.v[5]
+        try:
+            pose = self.tfListener.transformQuaternion('imu_link',pose)
+        except Exception as exc:
+            rospy.logerr(exc)
+            return
+        self._imu.orientation = pose.pose.orientation
+        self._imu.orientation_covariance = [1e-9,1e-9,1e-9,1e-9,1e-9,1e-9,1e-9,1e-9,1e-9]
+        self._imu.angular_velocity = Vector3(0,0,self._v[2])
+        self._imu.angular_velocity_covariance = [1e-9,1e-9,1e-9,1e-9,1e-9,1e-9,1e-9,1e-9,1e-9]
+        self._imu.linear_acceleration = Vector3(*self._a)
+        self._imu.linear_acceleration_covariance = [1e-9,1e-9,1e-9,1e-9,1e-9,1e-9,1e-9,1e-9,1e-9]
 
-        #publish odometry
-        self.odom_pub.publish(odom)
+    def pub_gps(self,event):
+        self._gps.header.frame_id="gps_link"
+        self._gps.header.stamp = rospy.Time.now()
+        self.gps_pub.publish(self._gps)
+
+    def pub_imu(self,event):
+        self._imu.header.frame_id='imu_link'
+        self._imu.header.stamp = rospy.Time.now()
+        self.imu_pub.publish(self._imu)
 
 if __name__ == '__main__':
     try:
-        rospy.init_node('nav_sim')
-        n = NavSimNode()
-        rospy.spin()
+        NavSimNode()
     except rospy.ROSInterruptException:
         pass

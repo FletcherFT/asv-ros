@@ -26,7 +26,6 @@ class xbee_read():
         rospy.on_shutdown(self.shutdown_handle)
         while not rospy.is_shutdown():
             try:
-                # if self.device._serial_port.is_open:
                 data_msg = self.device.read_expl_data()
             except TimeoutException:
                 rospy.logerr("Timeout!")
@@ -34,10 +33,7 @@ class xbee_read():
                 rospy.logerr("Bad Checksum")
             except XBeeException as exc:
                 rospy.logerr("XBee Error!: {}".format(exc))
-            # except rospy.ROSInterruptException:
-            #     rospy.logwarn("Shutting down!")
             else:
-                #rospy.loginfo("Cycle")
                 if data_msg:
                     self.handle_data(data_msg)
             hz.sleep()
