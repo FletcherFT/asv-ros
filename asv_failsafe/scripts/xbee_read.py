@@ -5,6 +5,7 @@ from digi.xbee.models.mode import APIOutputMode
 import struct
 from sensor_msgs.msg import Joy
 from digi.xbee.exception import InvalidPacketException, InvalidOperatingModeException, TimeoutException, XBeeException
+import time
 
 class xbee_read():
     def __init__(self):
@@ -15,12 +16,19 @@ class xbee_read():
         self.device = ZigBeeDevice(PORT, BAUD_RATE)
         hz = rospy.Rate(10)
         self.pub = rospy.Publisher("joy",Joy,queue_size=10)
-        try:
-            self.device.open()
-        except Exception as exc:
-            rospy.logerr(exc)
-        finally:
-            self.device.flush_queues()
+        while True:
+            try:
+                if not self.device.is_open:
+                    self.device.open()
+                break
+            except Exception as exc:
+                rospy.logerr(exc)
+                if self.device.is_open:
+                    self.device.close()
+                time.sleep(1)
+                continue
+        print "he open"
+        self.device.flush_queues()
         self.device.set_api_output_mode(APIOutputMode.EXPLICIT)
         rospy.sleep(rospy.Duration.from_sec(2.0))
         rospy.on_shutdown(self.shutdown_handle)
