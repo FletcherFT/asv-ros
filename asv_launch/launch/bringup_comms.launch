@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-<arg name="device" default="/dev/ttyUSB0"/>
+<arg name="device" default="/dev/ttyUSB1"/>
 <node pkg="asv_failsafe" type="xbee_read.py" name="xbee_server" output="screen">
     <param name="device" value="$(arg device)"/>
 </node>
