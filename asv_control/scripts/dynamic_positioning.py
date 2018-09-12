@@ -51,8 +51,6 @@ class PoseControllerNode():
         self.timer = rospy.Timer(period, self.updateOutput)
         
         #rospy.Subscriber('odometry/filtered', Odometry, self.odometryCallback)
-        rospy.loginfo('Listening for pose feedback to be published on '
-                      '%s...', rospy.resolve_name('odometry/filtered'))
         rospy.loginfo('Waiting for setpoint to be published on '
                       '%s...', rospy.resolve_name('pose_com')) 
 

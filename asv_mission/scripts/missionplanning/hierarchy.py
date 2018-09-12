@@ -23,14 +23,18 @@ class Hierarchy():
         self._flag = True
 
     def getTask(self):
-        if self._flag:
-            # this is the first time the getTask function has been called for this plan, don't append anything to self._complete
-            self._findLowest()
-            self._flag=False
-        else:
-            self._complete.append(self._current)
-            self._findLowest()
+        self._findLowest()
+        # if self._flag:
+        #     # this is the first time the getTask function has been called for this plan, don't append anything to self._complete
+        #     self._findLowest()
+        #     self._flag=False
+        # else:
+        #     self._complete.append(self._current)
+        #     self._findLowest()
         return self.plan[self._current]
+
+    def taskDone(self):
+        self._complete.append(self._current)
 
     def _findLowest(self):
         while True:

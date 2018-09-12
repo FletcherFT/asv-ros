@@ -19,4 +19,6 @@
     <include file="$(find asv_launch)/launch/bringup_hmi.launch"/>
     <!-- BRINGUP GUIDANCE -->
     <include file="$(find asv_launch)/launch/bringup_guidance.launch"/>
+    <!-- BRINGUP HIGH LEVEL CONTROL -->
+    <node pkg="asv_mission" type="supervisor.py" name="supervisor" output="screen"/>
 </launch>

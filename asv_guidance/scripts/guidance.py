@@ -38,6 +38,7 @@ class guidance:
         # Flow Control
         self.manual = True #switch for automated or manual override guidance
         self.notified = False #switch for notifying the operator/supervisor when the task is reached
+        self.hp = False
 
         # msg containers
         self.override = PoseStamped()
@@ -64,8 +65,6 @@ class guidance:
         # Service to call for new way point
         try:
             rospy.wait_for_service('supervisor/request_new',5.0)
-        except rospy.ROSInterruptException:
-            pass
         except:
             rospy.logerr("No supervisor/request_new service available.")
             self.notified=False
@@ -80,6 +79,15 @@ class guidance:
     def override_cb(self,msg):
         self.manual = True
         self.notified = False
+        try: 
+            rospy.wait_for_service("control_topic_mux/select",1.0)
+        except:
+            pass
+        else:
+            # call trigger service to switch to dynamic positioning
+            service_handle = rospy.ServiceProxy('control_topic_mux/select', MuxSelect)
+            service_handle("tau_com/AP")
+            rospy.sleep(rospy.Duration(1))
         if self.tfBuffer.can_transform(msg.header.frame_id,"odom",rospy.Time.now(),rospy.Duration.from_sec(5)):
             rospy.loginfo("{}: New override waypoint at ({},{},{})".format(rospy.get_name(),msg.pose.position.x,msg.pose.position.y,msg.header.frame_id))
             self.override = self.tfListener.transformPose("odom",msg) #TF2 FOR KINETIC JUST AIN'T WORKING
@@ -93,6 +101,8 @@ class guidance:
         # in: GeoPoseStamped message
         # CONVERT LAT, LONG TO UTM
         WGS84 = msg.pose.position
+        # check to see if GeoPoseStamped is for hold position or waypoint following..
+        self.hp = WGS84.altitude>=0
         UTM = utm.toUtm(WGS84.latitude,WGS84.longitude)
         self.automate = PoseStamped()
         self.automate.header.frame_id="utm"
@@ -169,14 +179,19 @@ class guidance:
                     # call trigger service to switch to dynamic positioning
                     service_handle = rospy.ServiceProxy('control_topic_mux/select', MuxSelect)
                     service_handle("tau_com/DP")
+                    rospy.sleep(rospy.Duration(1))
                 self.notified=True
-        elif not self.manual and abs(yaw_error_measured)<self.yaw_error_acceptance and distance_error_measured<self.distance_error_acceptance:
-            if not self.notified:
-                rospy.loginfo("{}: Automated waypoint reached, requesting next point.".format(rospy.get_name()))
-                self.notified=True
-                # call trigger service to switch controller to dynamic positioning
-                # call trigger service to task executor
-                self.request_new()
+        elif not self.manual: 
+            if not self.hp and distance_error_measured<self.distance_error_acceptance:
+                if not self.notified:
+                    rospy.loginfo("{}: Automated waypoint reached, requesting next point.".format(rospy.get_name()))
+                    self.notified=True
+                    self.request_new()
+            elif self.hp and abs(yaw_error_measured)<self.yaw_error_acceptance and distance_error_measured<self.distance_error_acceptance:
+                if not self.notified:
+                    rospy.loginfo("{}: Automated waypoint reached, requesting next point.".format(rospy.get_name()))
+                    self.notified=True
+                    self.request_new()
 
 if __name__ == '__main__':
     guidance()
