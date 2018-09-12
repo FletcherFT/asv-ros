@@ -3,11 +3,11 @@ import rospy
 import dynamic_reconfigure.server
 from asv_control.cfg import AutopilotConfig
 from std_srvs.srv import SetBool
-from pid import Pid
+from controllers.pid import Pid
 from geometry_msgs.msg import WrenchStamped
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
-from math import pi
+from math import pi, atan2
 import numpy as np
 mul=np.matmul
 import tf2_ros
@@ -33,7 +33,7 @@ class Autopilot():
         frequency = rospy.get_param('~frequency',20)
         rospy.loginfo('Starting autopilot control with {} Hz.'.format(frequency))
         # get the desired cruising speed of the ASV
-        self.U = rospy.get_param('~U',0.3)
+        self.U = rospy.get_param('~U',0.7)
         # init some pose messages
         self.pose_state = PoseStamped()
         self.pose_set = PoseStamped()
@@ -47,7 +47,7 @@ class Autopilot():
         self.enable_server = rospy.Service('~enable', SetBool, self.enable)
         self.pids = []
         for i in range(2):
-            self.pids.append(Pid(0.0, 0.0, 0.0,integral_min=-0.1,integral_max=0.1,output_max=1.0))
+            self.pids.append(Pid(0.0, 0.0, 0.0,integral_min=-2.0,integral_max=2.0))
         self.server = dynamic_reconfigure.server.Server(AutopilotConfig, self.reconfigure)
         self.pub = rospy.Publisher('tau_com/AP',WrenchStamped,queue_size=10)
         period = rospy.Duration.from_sec(1.0/frequency)
@@ -82,12 +82,14 @@ class Autopilot():
         Handles dynamic reconfigure requests.
         """
         rospy.loginfo("Reconfigure request...")
-        self.pids[0].k_p = config['U_Kp']
-        self.pids[0].k_i = config['U_Ki']
-        self.pids[0].k_d = config['U_Kd']
-        self.pids[1].k_p = config['psi_Kp']
-        self.pids[1].k_i = config['psi_Ki']
-        self.pids[1].k_d = config['psi_Kd']
+        self.pids[0].k_p = config['surge_Kp']
+        self.pids[0].k_i = config['surge_Ki']
+        self.pids[0].k_d = config['surge_Kd']
+        self.pids[0].output_max = config['surge_max']
+        self.pids[1].k_p = config['yaw_Kp']
+        self.pids[1].k_i = config['yaw_Ki']
+        self.pids[1].k_d = config['yaw_Kd']
+        self.pids[1].output_max = config['yaw_max']
         return config # Returns the updated configuration.
     
     def setpointCallback(self,setpoint):
@@ -138,7 +140,10 @@ class Autopilot():
         self.pose_set.pose.orientation.z,
         self.pose_set.pose.orientation.w)
         eul_set = transform.euler_from_quaternion(q_set,'sxyz')
-        psi_err = eul_set[2]-eul_state[2]
+        dY = self.pose_set.pose.position.y-self.pose_state.pose.position.y
+        dX = self.pose_set.pose.position.x-self.pose_state.pose.position.x
+        psi_set = atan2(dY,dX)
+        psi_err = -(psi_set-eul_state[2])
         if abs(psi_err)>pi:
             if psi_err<0:
                 psi_err+=2*pi

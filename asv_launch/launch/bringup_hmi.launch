@@ -11,4 +11,5 @@
 	<node machine="shoreside" pkg="rqt_service_caller" type="rqt_service_caller" name="service_caller"/>
 	<node machine="shoreside" pkg="rqt_console" type="rqt_console" name="console"/>
 	<node machine="shoreside" pkg="rqt_logger_level" type="rqt_logger_level" name="log_level"/>
+	<node machine="shoreside" pkg="rqt_reconfigure" type="rqt_reconfigure" name="reconfigure"/>
 </launch>

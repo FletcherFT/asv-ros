@@ -5,6 +5,7 @@ from pygeodesy import utm
 
 from geometry_msgs.msg import TransformStamped, PoseStamped, Vector3
 from geographic_msgs.msg import GeoPoseStamped
+from topic_tools.srv import MuxSelect
 
 from nav_msgs.msg import Odometry
 from std_msgs.msg import ColorRGBA
@@ -157,11 +158,18 @@ class guidance:
         elif yaw_error_measured < -np.pi:
             yaw_error_measured+=2*np.pi
         rospy.logdebug("Distance error:{}\tYaw error:{}".format(distance_error_measured,yaw_error_measured))
-        if self.manual and abs(yaw_error_measured)<self.yaw_error_acceptance and distance_error_measured<self.distance_error_acceptance:
+        if self.manual and distance_error_measured<self.distance_error_acceptance:
             if not self.notified:
                 rospy.loginfo("{}: Override waypoint reached, holding position.".format(rospy.get_name()))
+                try: 
+                    rospy.wait_for_service("control_topic_mux/select",1.0)
+                except:
+                    pass
+                else:
+                    # call trigger service to switch to dynamic positioning
+                    service_handle = rospy.ServiceProxy('control_topic_mux/select', MuxSelect)
+                    service_handle("tau_com/DP")
                 self.notified=True
-            # call trigger service to switch to dynamic positioning
         elif not self.manual and abs(yaw_error_measured)<self.yaw_error_acceptance and distance_error_measured<self.distance_error_acceptance:
             if not self.notified:
                 rospy.loginfo("{}: Automated waypoint reached, requesting next point.".format(rospy.get_name()))

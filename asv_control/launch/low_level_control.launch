@@ -5,8 +5,10 @@
     </node>
     <node pkg="asv_control" type="autopilot.py" name="autopilot" output="screen">
         <remap from="pose_com" to="guidance/setpoint"/>
+        <rosparam command="load" file="$(find asv_control)/params/ap_pid_settings.yaml"/>
     </node>
     <node pkg="asv_control" type="dynamic_positioning.py" name="dynamic_position" output="screen">
         <remap from="pose_com" to="guidance/setpoint"/>
+        <rosparam command="load" file="$(find asv_control)/params/dp_pid_settings.yaml"/>
     </node>
 </launch>

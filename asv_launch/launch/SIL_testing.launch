@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
     <!-- BRINGUP SIMULATOR -->
-    <node name="simulator" pkg="asv_control" type="nav_sim.py">
+    <node name="simulator" pkg="asv_control" type="nav_sim.py" output="screen">
         <remap from="gps/fix" to="ublox_gps/fix"/>
         <rosparam command="load" file="$(find asv_control)/params/sim_settings.yaml"/>
     </node>
