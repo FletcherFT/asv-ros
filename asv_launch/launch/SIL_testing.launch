@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- BRINGUP SIMULATOR -->
+    <node name="simulator" pkg="asv_control" type="nav_sim.py">
+        <remap from="gps/fix" to="ublox_gps/fix"/>
+        <rosparam command="load" file="$(find asv_control)/params/sim_settings.yaml"/>
+    </node>
+    <!-- BRINGUP STATE ESTIMATION -->
+	<include file="$(find asv_navigation)/launch/ekf.launch"/>
+    <!-- BRINGUP HARDWARE CONTROLLERS -->
+    <include file="$(find asv_control)/launch/hardware_level_control.launch">
+        <arg name="SIL" value="true"/>
+    </include>
+    <!-- BRINGUP LOW LEVEL CONTROLLERS -->
+    <include file="$(find asv_control)/launch/low_level_control.launch"/>
+    <!-- BRINGUP COMMUNICATIONS -->
+    <include file="$(find asv_launch)/launch/bringup_comms.launch"/>
+    <!-- BRINGUP HMI -->
+    <include file="$(find asv_launch)/launch/bringup_hmi.launch"/>
+    <!-- BRINGUP GUIDANCE -->
+    <include file="$(find asv_launch)/launch/bringup_guidance.launch"/>
+</launch>

@@ -3,6 +3,10 @@
     <node pkg="asv_control" type="controlmanager.py" name="controlmanager" output="screen">
         <remap from="mux/select" to="control_topic_mux/selected"/>
     </node>
-    <node pkg="asv_control" type="autopilot.py" name="autopilot" output="screen"/>
-    <node pkg="asv_control" type="dynamic_positioning.py" name="dynamic_position" output="screen"/>
+    <node pkg="asv_control" type="autopilot.py" name="autopilot" output="screen">
+        <remap from="pose_com" to="guidance/setpoint"/>
+    </node>
+    <node pkg="asv_control" type="dynamic_positioning.py" name="dynamic_position" output="screen">
+        <remap from="pose_com" to="guidance/setpoint"/>
+    </node>
 </launch>
