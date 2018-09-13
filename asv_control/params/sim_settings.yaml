@@ -1,5 +1,5 @@
-{startinggps: [-41.401532, 147.120110],
-startingimu: [0.0,0.0,0.0],
+{startingGPS: [-41.398678, 147.119713],
+startingIMU: [0.0,0.0,0.0],
 mass: 15.0,
 xg: -0.1,
 Iz: 6,
@@ -10,6 +10,6 @@ Yvdot: -125.0,
 Yr: -0.015,
 Yrdot: -0.15,
 Nv: -0.3,
-Nr: -80,
-Nrdot: -180
+Nr: -74,
+Nrdot: -99
 }

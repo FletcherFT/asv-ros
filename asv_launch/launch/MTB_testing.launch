@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- BRINGUP NAVIGATION -->
+    <include file="$(find asv_launch)/launch/bringup_navigation.launch"/>
+    <!-- BRINGUP HARDWARE CONTROLLERS -->
+    <include file="$(find asv_control)/launch/hardware_level_control.launch">
+        <arg name="SIL" value="false"/>
+    </include>
+    <!-- BRINGUP LOW LEVEL CONTROLLERS -->
+    <include file="$(find asv_control)/launch/low_level_control.launch"/>
+    <!-- BRINGUP COMMUNICATIONS -->
+    <include file="$(find asv_launch)/launch/bringup_comms.launch"/>
+    <!-- BRINGUP HMI -->
+    <include file="$(find asv_launch)/launch/bringup_hmi.launch"/>
+    <!-- BRINGUP GUIDANCE -->
+    <include file="$(find asv_launch)/launch/bringup_guidance.launch"/>
+    <!-- BRINGUP HIGH LEVEL CONTROL -->
+    <node pkg="asv_mission" type="supervisor.py" name="supervisor" output="screen"/>
+</launch>
