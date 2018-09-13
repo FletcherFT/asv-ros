@@ -112,7 +112,7 @@ class PoseControllerNode():
             if self.set_pose.header.frame_id != 'base_link':
                 self.set_pose.header.stamp = rospy.Time.now()
                 try:
-                    self.tfListener.waitForTransform(self.set_pose.header.frame_id,"base_link",rospy.Time.now(),rospy.Duration(0.5))
+                    self.tfListener.waitForTransform(self.set_pose.header.frame_id,"base_link",rospy.Time.now(),rospy.Duration(1.0))
                     error_vector = self.tfListener.transformPose("base_link",self.set_pose)
                 except:
                     rospy.logwarn("No TF, setting feedback to all zeros")

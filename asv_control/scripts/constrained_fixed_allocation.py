@@ -137,9 +137,11 @@ class ConstrainedNonrotatableAllocation:
         for idx,i in enumerate(thrusts):
             if abs(i)>0.1:
                 if idx<2:
-                    pwm[idx]=200/20*i
+                    pwm[idx]=7.537688442211056*i + 49.246231155778858
                 else:
-                    pwm[idx]=200/10*i
+                    pwm[idx]=15.151515151515149*i + 48.484848484848499
+            else:
+                pwm[idx]=0
             # pwm[idx]=-0.3362*abs(i)**2+13.1989*abs(i)+59.0382
             # if abs(pwm[idx])<self.deadband[idx]:
             #     pwm[idx]=0
