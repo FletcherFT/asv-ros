@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <launch>
-<arg name="device" default="/dev/ttyUSB0"/>
+<arg name="xbee_device" default="/dev/ttyUSB0"/>
 <node pkg="asv_failsafe" type="xbee_read.py" name="xbee_server" output="screen" respawn="true">
-    <param name="device" value="$(arg device)"/>
+    <param name="device" value="$(arg xbee_device)"/>
 </node>
 <node pkg="asv_control" type="teleop_remapping.py" name="teleop_remapper"/>
 </launch>

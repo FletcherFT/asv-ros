@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <launch>
+    <arg name="xbee_device" default="/dev/ttyUSB1"/>
     <!-- BRINGUP SIMULATOR -->
     <node name="simulator" pkg="asv_control" type="nav_sim.py" output="screen">
         <remap from="gps/fix" to="ublox_gps/fix"/>
@@ -14,7 +15,9 @@
     <!-- BRINGUP LOW LEVEL CONTROLLERS -->
     <include file="$(find asv_control)/launch/low_level_control.launch"/>
     <!-- BRINGUP COMMUNICATIONS -->
-    <include file="$(find asv_launch)/launch/bringup_comms.launch"/>
+    <include file="$(find asv_launch)/launch/bringup_comms.launch">
+        <arg name="xbee_device" value="$(arg xbee_device)"/>
+    </include>
     <!-- BRINGUP HMI -->
     <include file="$(find asv_launch)/launch/bringup_hmi.launch"/>
     <!-- BRINGUP GUIDANCE -->
