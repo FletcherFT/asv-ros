@@ -9,6 +9,7 @@ def receivePlanCallback(plan_msg):
     while True:
         task = plan.getTask()
         print(task)
+        rospy.sleep(rospy.Duration(0.5))
         if task.action == "root":
             break
         plan.taskDone()

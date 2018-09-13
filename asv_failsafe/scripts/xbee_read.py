@@ -6,6 +6,7 @@ import struct
 from sensor_msgs.msg import Joy
 from digi.xbee.exception import InvalidPacketException, InvalidOperatingModeException, TimeoutException, XBeeException
 import time
+from std_srvs.srv import SetBool, Trigger
 
 class xbee_read():
     def __init__(self):
@@ -67,13 +68,46 @@ class xbee_read():
         if cmd == 'st':
             if data[2]:
                 rospy.loginfo("Start Mission Request")
+                try:
+                    rospy.wait_for_service("supervisor/start",2.0)
+                except:
+                    rospy.logerr("No supervisor/start service available.")
+                else:
+                    service_handle = rospy.ServiceProxy("supervisor/start",Trigger)
+                    response = service_handle()
+                    if response.success:
+                        rospy.loginfo("Successful start mission request (xbee)")
+                    else:
+                        rospy.logerr(response.message)
             else:
                 rospy.loginfo("Stop Mission Request")
+                try:
+                    rospy.wait_for_service("supervisor/pause",2.0)
+                except:
+                    rospy.logerr("No supervisor/pause service available.")
+                else:
+                    service_handle = rospy.ServiceProxy("supervisor/pause",SetBool)
+                    response = service_handle(True)
+                    if response.success:
+                        rospy.loginfo("Successful pause mission request (xbee)")
+                    else:
+                        rospy.logerr(response.message)
         elif cmd == 'rt':
             if data[2]:
                 rospy.loginfo("Return Home Request")
             else:
                 rospy.loginfo("Resume Mission Request")
+                try:
+                    rospy.wait_for_service("supervisor/pause",2.0)
+                except:
+                    rospy.logerr("No supervisor/pause service available.")
+                else:
+                    service_handle = rospy.ServiceProxy("supervisor/pause",SetBool)
+                    response = service_handle(False)
+                    if response.success:
+                        rospy.loginfo("Successful resume mission request (xbee)")
+                    else:
+                        rospy.logerr(response.message)
         else:
             rospy.logwarn("Unknown Command: {}".format(cmd))
 
