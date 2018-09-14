@@ -79,15 +79,15 @@ class guidance:
     def override_cb(self,msg):
         self.manual = True
         self.notified = False
-        try: 
-            rospy.wait_for_service("control_topic_mux/select",1.0)
-        except:
-            pass
-        else:
-            # call trigger service to switch to dynamic positioning
-            service_handle = rospy.ServiceProxy('control_topic_mux/select', MuxSelect)
-            service_handle("tau_com/AP")
-            rospy.sleep(rospy.Duration(1))
+        #try: 
+        #    rospy.wait_for_service("control_topic_mux/select",1.0)
+        #except:
+        #    pass
+        #else:
+        #    # call trigger service to switch to dynamic positioning
+        #    service_handle = rospy.ServiceProxy('control_topic_mux/select', MuxSelect)
+        #    service_handle("tau_com/AP")
+        #    rospy.sleep(rospy.Duration(1))
         if self.tfBuffer.can_transform(msg.header.frame_id,"odom",rospy.Time.now(),rospy.Duration.from_sec(5)):
             rospy.loginfo("{}: New override waypoint at ({},{},{})".format(rospy.get_name(),msg.pose.position.x,msg.pose.position.y,msg.header.frame_id))
             self.override = self.tfListener.transformPose("odom",msg) #TF2 FOR KINETIC JUST AIN'T WORKING
@@ -179,7 +179,6 @@ class guidance:
                     # call trigger service to switch to dynamic positioning
                     service_handle = rospy.ServiceProxy('control_topic_mux/select', MuxSelect)
                     service_handle("tau_com/DP")
-                    rospy.sleep(rospy.Duration(1))
                 self.notified=True
         elif not self.manual: 
             if not self.hp and distance_error_measured<self.distance_error_acceptance:
