@@ -45,13 +45,7 @@ class ardudriver:
 
     def update(self,msg):
         try:
-            #data_msg="s,{},{},{}".format(*msg.pwm)
-            formatspec="chhh"
-            data = ("s",msg.pwm[0],
-                    msg.pwm[1],
-                    msg.pwm[2])
-            data_msg = struct.pack(formatspec,*data)
-
+            data_msg="s,{},{},{}".format(*msg.pwm)
             rospy.logdebug("Mega: sending "+data_msg)
             if not self.test:
                 self.mega.write(data_msg)
