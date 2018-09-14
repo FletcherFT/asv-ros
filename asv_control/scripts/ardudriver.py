@@ -46,7 +46,7 @@ class ardudriver:
     def update(self,msg):
         try:
             #data_msg="s,{},{},{}".format(*msg.pwm)
-            formatspec="chhh"
+            formatspec=">chhh"
             data = ("s",msg.pwm[0],
                     msg.pwm[1],
                     msg.pwm[2])
