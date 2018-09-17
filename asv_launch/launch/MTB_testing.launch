@@ -7,7 +7,7 @@
     <!-- BRINUPG THE POWER MODULE -->
     <include file="$(find asv_energy)/launch/power_systems.launch"/>
     <!-- RECORD THE COMMANDED THRUSTS, BATTERY STATE, AND RAW ADC (IN CASE OF BAD CALIBRATION) -->
-    <node pkg="rosbag" type="record" name="rosbag_record_power" args="record -o $(arg data_dir)/power thrusters energy odometry/filtered"/>
+    <node pkg="rosbag" type="record" name="rosbag_record_power" args="record -o $(arg data_dir)/power /thrusters /energy/battery /energy/adc_raw odometry/filtered"/>
     <!-- TODO: CATKIN_MAKE ON ASV (NEW MESSAGE IN ASV_ENERGY/POWER_MODULE.PY) -->
     <!-- TODO: CHECK POWER_MODULE.PY IS WORKING, CHECK THAT TOPICS ARE BEING RECORDED CORRECTLY TO THE DATA_DIR ON THE RPI -->
     <!-- TODO: CHECK ENERGY MONITOR (AGGREGATE POWER INSTANTANEOUS POWER CONSUMPTION) -->

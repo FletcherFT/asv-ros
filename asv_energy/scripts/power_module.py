@@ -66,7 +66,7 @@ def main():
             battery_msg.present = True
             battery_pub.publish(battery_msg)
             reading_msg.header = battery_msg.header
-            reading_msg.data = values
+            reading_msg.data = raw
             reading_pub.publish(reading_msg)
             hz.sleep()
     except rospy.ROSInterruptException:
