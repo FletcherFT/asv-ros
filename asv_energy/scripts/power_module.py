@@ -32,7 +32,7 @@ def main():
     battery_type=rospy.get_param("~type","Pb")
     battery_volt=rospy.get_param("~V",12.0)
     battery_design_capacity=rospy.get_param('~C',7) # capacity of battery in Ah
-    reading_pub = rospy.Publisher("energy/adc_raw",String,queue_size=10)
+    reading_pub = rospy.Publisher("energy/adc_raw",Readings,queue_size=10)
     battery_pub = rospy.Publisher("energy/battery",BatteryState,queue_size=10)
     hz = rospy.Rate(10)
     rospy.loginfo('Reading ADS1x15 values, press Ctrl-C to quit...')
