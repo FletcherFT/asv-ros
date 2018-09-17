@@ -3,6 +3,7 @@
     <arg name="SIL" default="false"/>
     <rosparam command="load" file="$(find asv_control)/params/thrustersAP.yaml"/>
     <rosparam command="load" file="$(find asv_control)/params/thrustersDP.yaml"/>
+    <rosparam command="load" file="$(find asv_control)/params/motor_config.yaml"/>
     <node pkg="asv_control" type="ardudriver.py" name="ardudriver" output="screen">
         <param name="test" value="$(arg SIL)"/>
     </node>

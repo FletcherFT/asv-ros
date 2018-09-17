@@ -144,6 +144,11 @@ class Autopilot():
         dX = self.pose_set.pose.position.x-self.pose_state.pose.position.x
         psi_set = atan2(dY,dX)
         psi_err = -(psi_set-eul_state[2])
+        # if the heading error is greater than pi/5 and the speed setpoint is U, set to 0.0.
+        if abs(psi_err) > pi/5 and abs(self.pids[0].getSetpoint())>0:
+            self.pids[0].setSetpoint(0.0)
+        elif abs(psi_err) < pi/5 and abs(self.pids[0].getSetpoint())==0:
+            self.pids[0].setSetpoint(self.U)
         if abs(psi_err)>pi:
             if psi_err<0:
                 psi_err+=2*pi

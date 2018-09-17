@@ -1,8 +1,8 @@
 {surge_Kd: 50.0,
       surge_Ki: 20.0,
       surge_Kp: 150.0,
-      surge_max: 5,
+      surge_max: 40,
       yaw_Kd: 2.0,
       yaw_Ki: 0.1,
       yaw_Kp: 4.0,
-      yaw_max: 2}
+      yaw_max: 10}

@@ -33,6 +33,7 @@ class ConstrainedNonrotatableAllocation:
         self.sol_msg = WrenchStamped()
         self.sol_pub = rospy.Publisher("tau_sol",WrenchStamped,queue_size=10)
         self.mode_server = rospy.Service('~modeconfig',ConfigureSteppers,self.mode)
+        self.motor_config = rospy.get_param('motorConfig')
         rospy.Subscriber("tau_com/out",WrenchStamped,self.wrenchCallback)
         rospy.spin()
 
@@ -41,9 +42,6 @@ class ConstrainedNonrotatableAllocation:
             self.thruster = rospy.get_param('thrusterAP')
         else:
             self.thruster = rospy.get_param('thrusterDP')
-        self.kpwm = self.thruster['Kpwm']
-        self.deadband = self.thruster['deadband']
-        self.krpm = self.thruster['Krpm']
         self.r = 3
         self.n = self.thruster['n']
         self.W = diag(self.thruster['W'])
@@ -95,6 +93,14 @@ class ConstrainedNonrotatableAllocation:
         slacks = z[self.n:2*self.n]
         s = "|"+(2*self.n)*"\t{:.4}\t|"
         rospy.logdebug(s.format(*z))
+        
+        self.thrust_msg.header.stamp = rospy.Time.now()
+        self.thrust_msg.header.frame_id = str(self.thruster['name'])
+        # compute pwms and check thrusts for deadband cutoff.
+        self.thrust_msg.pwm,thrusts = self.forceToPWM(thrusts)
+        self.thrust_msg.rpm = self.forceToRPM(thrusts)
+        self.thrust_msg.force = thrusts
+        self.thrust_pub.publish(self.thrust_msg)
         tau_sol = matmul(self.T,thrusts)
         self.sol_msg.header.stamp = rospy.Time.now()
         self.sol_msg.header.frame_id = "base_link"
@@ -102,12 +108,6 @@ class ConstrainedNonrotatableAllocation:
         self.sol_msg.wrench.force.y = tau_sol[1]
         self.sol_msg.wrench.torque.z = tau_sol[2]
         self.sol_pub.publish(self.sol_msg)
-        self.thrust_msg.header.stamp = rospy.Time.now()
-        self.thrust_msg.header.frame_id = str(self.thruster['name'])
-        self.thrust_msg.force = thrusts
-        self.thrust_msg.rpm = self.forceToRPM(thrusts)
-        self.thrust_msg.pwm = self.forceToPWM(thrusts)
-        self.thrust_pub.publish(self.thrust_msg)
 
     def mode(self,request):
         try:
@@ -126,25 +126,22 @@ class ConstrainedNonrotatableAllocation:
     def forceToRPM(self,thrusts):
         rpm = [0,0,0]
         for idx,i in enumerate(thrusts):
-            if i>0:
-                rpm[idx]=self.krpm[idx]*i**2
-            else:
-                rpm[idx]=-self.krpm[idx]*i**2
+            rpm[idx]=self.motor_config['Krpm'][idx]*abs(i)**2
+            if i<0:
+                rpm[idx]*=-1
         return rpm
     
     def forceToPWM(self,thrusts):
-        pwm = [0,0,0]
-        for idx,i in enumerate(thrusts):
-            if abs(i)>0.1:
-                if self.thruster['name'][idx]!="bow":
-                    pwm[idx]=15.151515151515149*abs(i) + 48.484848484848499
-                else:
-                    pwm[idx]=7.537688442211056*abs(i) + 49.246231155778858
-            else:
-                pwm[idx]=0
-            if i<0:
-                pwm[idx]*=-1
-        return pwm
+        pwm = np.array([0,0,0])
+        thrusts = np.array(thrusts)
+        K2 = np.array(self.motor_config['Order2Kpwm'])
+        K1 = np.array(self.motor_config['Order1Kpwm'])
+        K0 = np.array(self.motor_config['Order0Kpwm'])
+        pwm = K2*abs(thrusts)**2 + K1*abs(thrusts) + K0
+        deadband = np.array(self.motor_config['deadband'])
+        pwm[pwm<deadband]=0
+        pwm[thrusts<0]*=-1
+        return pwm,thrusts
 
 if __name__ == "__main__":
     try:
