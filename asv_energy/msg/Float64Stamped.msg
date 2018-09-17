@@ -1,2 +1,2 @@
-Header Header
+Header header
 float64 data
