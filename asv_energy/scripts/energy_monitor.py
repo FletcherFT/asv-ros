@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import rospy
 from sensor_msgs.msg import BatteryState
 from asv_energy.msg import Float64Stamped
