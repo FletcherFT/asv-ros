@@ -3,6 +3,7 @@ import rospy
 from asv_mission.msg import Plan, Task
 from sensor_msgs.msg import Joy
 from std_srvs.srv import Trigger, SetBool
+from std_msgs.msg import String
 from geographic_msgs.msg import GeoPoseStamped
 from geometry_msgs.msg import Quaternion, PoseStamped
 from topic_tools.srv import MuxSelect
@@ -11,14 +12,13 @@ from tf_conversions import transformations as tf
 
 class Supervisor:
     def __init__(self):
-        self.paused = False
-        self.manual = False
-        self._flag = True
+        self.mode = "idle"
         self.plan = None
         self.hptask = False
         self.hptime = 0.0
         rospy.init_node("supervisor")
         self.task_pub = rospy.Publisher('guidance/task',GeoPoseStamped,queue_size=10)
+        self.status_pub = rospy.Publisher("asv/status",String,queue_size=10)
         self.pause = rospy.Service('supervisor/pause', SetBool, self.pausePlayCallback)
         self.start = rospy.Service('supervisor/start',Trigger,self.startPlanCallback)
         self.nexttask = rospy.Service('supervisor/request_new', Trigger, self.nextTaskCallback)
@@ -29,17 +29,12 @@ class Supervisor:
         rospy.spin()
     
     def receiveManualCallback(self,joy_msg):
-        # if we've received a joystick message and the mission isn't paused, pause the mission and configure for override mode.
-        flag = False
-        if not self.paused:
-            self.manual = True
-            self.paused = True
-            flag = True
-        elif self.paused and not self.manual:
-            # joystick received, but vehicle in operator override mode, so override that with manual control.
-            self.manual = True
-            flag = True
-        if flag:
+        if self.mode=="manual":
+            return
+        else:
+            self.mode="manual"
+            rospy.logwarn("Switching from {} to manual override.".format(self.mode))
+            self.status_pub.publish("ASV currently in mode: {}".format(self.mode))
             try:
                 rospy.wait_for_service('control_topic_mux/select',5.0)
             except Exception as exc:
@@ -50,24 +45,17 @@ class Supervisor:
             rospy.logdebug("{}: Switching to manual override, now publishing {} from {}".format(rospy.get_name(),rospy.resolve_name("override"),response.prev_topic))
 
     def receiveOperatorCallback(self,geo_msg):
-        # if we've receive an operator override message and the mission isn't paused or in manual override, pause it.
-        flag = False
-        if not self.paused and not self.manual:
-            self.paused = True
-            flag = True
-        elif self.paused and not self.manual:
-            flag = True
-        elif self.paused and self.manual:
-            rospy.logwarn("In manual override mode, you must call resume service to get out of it.")
-        if flag:
-            try:
-                rospy.wait_for_service('control_topic_mux/select',5.0)
-            except Exception as exc:
-                rospy.logerr(exc)
-                return
-            service_handle = rospy.ServiceProxy('control_topic_mux/select', MuxSelect)
-            response=service_handle("tau_com/AP")
-            rospy.logdebug("{}: Switching to operator override, now publishing {} from {}".format(rospy.get_name(),rospy.resolve_name("AP"),response.prev_topic))
+        rospy.logwarn("Switching from {} to operator override.".format(self.mode))
+        self.mode="operator"
+        self.status_pub.publish("ASV currently in mode: {}".format(self.mode))
+        try:
+            rospy.wait_for_service('control_topic_mux/select',5.0)
+        except Exception as exc:
+            rospy.logerr(exc)
+            return
+        service_handle = rospy.ServiceProxy('control_topic_mux/select', MuxSelect)
+        response=service_handle("tau_com/AP")
+        rospy.logdebug("{}: Switching to operator override, now publishing {} from {}".format(rospy.get_name(),rospy.resolve_name("AP"),response.prev_topic))
 
     def parseTask(self,task):
         geo_msg = GeoPoseStamped()
@@ -114,6 +102,8 @@ class Supervisor:
                 return [False,"No control_topic_mux/select service found, is controlmanager.py running?"]
             service_handle = rospy.ServiceProxy('control_topic_mux/select', MuxSelect)
             service_handle("__none")
+            self.mode="idle"
+            self.status_pub.publish("ASV currently in mode: {}".format(self.mode))
             rospy.loginfo("Final task completed, now idling.")
             return [True,"Final task completed, now idling."]
         else:
@@ -142,8 +132,8 @@ class Supervisor:
             if self.plan is None:
                 response = [False,"No Mission to resume"]
             else:
-                self.paused = False
-                self.manual = False
+                self.mode="mission"
+                self.status_pub.publish("ASV currently in mode: {}".format(self.mode))
                 # put command in here to unpause the mission on the guidance side
                 try:
                     rospy.wait_for_service("guidance/resume",4.0)
@@ -155,15 +145,15 @@ class Supervisor:
                     response = self.parseTask(self.plan.getTask())
         # else we want to stop the mission
         else:
-            self.paused = True
-            self.manual = True
+            self.mode="idle"
+            self.status_pub.publish("ASV currently in mode: {}".format(self.mode))
             try:
                 rospy.wait_for_service("control_topic_mux/select",4.0)
             except:
                 response = [False, "No control_topic_mux/select service"]
             else:
                 service_handle = rospy.ServiceProxy("control_topic_mux/select",MuxSelect)
-                service_handle("/tau_com/override")
+                service_handle("__none")
                 response = [True,"Mission paused."]
         return response
 
@@ -171,8 +161,8 @@ class Supervisor:
         if self.plan is None:
             return [False,"No mission loaded"]
         else:
-            self.manual = False
-            self.paused = False
+            self.mode="mission"
+            self.status_pub.publish("ASV currently in mode: {}".format(self.mode))
             try:
                 rospy.wait_for_service("guidance/resume",4.0)
             except:

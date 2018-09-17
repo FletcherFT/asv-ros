@@ -9,7 +9,7 @@ def selectCallback(msg):
     if token=="AP":
         # disable DP controller
         try:
-            rospy.wait_for_service('dynamic_position/enable',5.0)
+            rospy.wait_for_service('dynamic_position/enable',15.0)
         except Exception as exc:
             rospy.logerr(exc)
             return
@@ -18,7 +18,7 @@ def selectCallback(msg):
         rospy.logdebug(response.message)
         # reconfigure steppers for AP mode
         try:
-            rospy.wait_for_service('ardudriver/stepperconfig',5.0)
+            rospy.wait_for_service('ardudriver/stepperconfig',15.0)
         except Exception as exc:
             rospy.logerr(exc)
             return
@@ -27,7 +27,7 @@ def selectCallback(msg):
         rospy.logdebug(response.message)
         # reconfigure allocator for AP mode
         try:
-            rospy.wait_for_service('allocator/modeconfig',5.0)
+            rospy.wait_for_service('allocator/modeconfig',15.0)
         except Exception as exc:
             rospy.logerr(exc)
             return
@@ -36,7 +36,7 @@ def selectCallback(msg):
         rospy.logdebug(response.message)
         # enable AP controller
         try:
-            rospy.wait_for_service('autopilot/enable',5.0)
+            rospy.wait_for_service('autopilot/enable',15.0)
         except Exception as exc:
             rospy.logerr(exc)
             return
@@ -46,7 +46,7 @@ def selectCallback(msg):
     elif token=="override":
         # disable DP controller
         try:
-            rospy.wait_for_service('dynamic_position/enable',5.0)
+            rospy.wait_for_service('dynamic_position/enable',15.0)
         except Exception as exc:
             rospy.logerr(exc)
             return
@@ -55,7 +55,7 @@ def selectCallback(msg):
         rospy.logdebug(response.message)
         # disable AP controller
         try:
-            rospy.wait_for_service('autopilot/enable',5.0)
+            rospy.wait_for_service('autopilot/enable',15.0)
         except Exception as exc:
             rospy.logerr(exc)
             return
@@ -64,7 +64,7 @@ def selectCallback(msg):
         rospy.logdebug(response.message)
         # reconfigure steppers for AP mode
         try:
-            rospy.wait_for_service('ardudriver/stepperconfig',5.0)
+            rospy.wait_for_service('ardudriver/stepperconfig',15.0)
         except Exception as exc:
             rospy.logerr(exc)
             return
@@ -73,7 +73,7 @@ def selectCallback(msg):
         rospy.logdebug(response.message)
         # reconfigure allocator for AP mode
         try:
-            rospy.wait_for_service('allocator/modeconfig',5.0)
+            rospy.wait_for_service('allocator/modeconfig',15.0)
         except Exception as exc:
             rospy.logerr(exc)
             return
@@ -83,7 +83,7 @@ def selectCallback(msg):
     elif token=="DP":
         # disable AP controller
         try:
-            rospy.wait_for_service('autopilot/enable',5.0)
+            rospy.wait_for_service('autopilot/enable',15.0)
         except Exception as exc:
             rospy.logerr(exc)
             return
@@ -92,7 +92,7 @@ def selectCallback(msg):
         rospy.logdebug(response.message)
         # reconfigure steppers for DP mode
         try:
-            rospy.wait_for_service('ardudriver/stepperconfig',5.0)
+            rospy.wait_for_service('ardudriver/stepperconfig',15.0)
         except Exception as exc:
             rospy.logerr(exc)
             return
@@ -101,7 +101,7 @@ def selectCallback(msg):
         rospy.logdebug(response.message)
         # reconfigure allocator for DP mode
         try:
-            rospy.wait_for_service('allocator/modeconfig',5.0)
+            rospy.wait_for_service('allocator/modeconfig',15.0)
         except Exception as exc:
             rospy.logerr(exc)
             return
@@ -110,7 +110,7 @@ def selectCallback(msg):
         rospy.logdebug(response.message)
         # enable DP controller
         try:
-            rospy.wait_for_service('dynamic_position/enable',5.0)
+            rospy.wait_for_service('dynamic_position/enable',15.0)
         except Exception as exc:
             rospy.logerr(exc)
             return
