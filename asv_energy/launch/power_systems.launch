@@ -1,4 +1,7 @@
 <?xml version="1.0"?>
 <launch>
-    <node pkg="asv_energy" type="power_module.py" name="power_module" output="screen"/>
+    <node pkg="asv_energy" type="power_module.py" name="power_module" output="screen">
+        <rosparam command="load" file="$(find asv_energy)/params/BatteryInfo.yaml"/>
+    </node>
+    <node pkg="asv_energy" type="energy_monitor.py" name="energy_monitor" output="screen"/>
 </launch>

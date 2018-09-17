@@ -1,0 +1,5 @@
+batteryinfo : {
+  C: 7,
+  V: 12,
+  type: Pb
+}

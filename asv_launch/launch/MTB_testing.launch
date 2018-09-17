@@ -1,19 +1,18 @@
 <?xml version="1.0"?>
 <launch>
-    <!-- BRINGUP NAVIGATION -->
-    <include file="$(find asv_launch)/launch/bringup_navigation.launch"/>
-    <!-- BRINGUP HARDWARE CONTROLLERS -->
-    <include file="$(find asv_control)/launch/hardware_level_control.launch">
-        <arg name="SIL" value="false"/>
-    </include>
-    <!-- BRINGUP LOW LEVEL CONTROLLERS -->
-    <include file="$(find asv_control)/launch/low_level_control.launch"/>
-    <!-- BRINGUP COMMUNICATIONS -->
-    <include file="$(find asv_launch)/launch/bringup_comms.launch"/>
-    <!-- BRINGUP HMI -->
-    <include file="$(find asv_launch)/launch/bringup_hmi.launch"/>
-    <!-- BRINGUP GUIDANCE -->
-    <include file="$(find asv_launch)/launch/bringup_guidance.launch"/>
-    <!-- BRINGUP HIGH LEVEL CONTROL -->
-    <node pkg="asv_mission" type="supervisor.py" name="supervisor" output="screen"/>
+    <!-- Objective: Get the Power Consumption of the Vehicle -->
+    <arg name="data_dir" default="/home/ubuntu/data_capture"/>
+    <!-- BRINUPG HIL TESTING -->
+    <include file="$(find asv_launch)/launch/HIL_testing.launch"/>
+    <!-- BRINUPG THE POWER MODULE -->
+    <include file="$(find asv_energy)/launch/power_systems.launch"/>
+    <!-- RECORD THE COMMANDED THRUSTS, BATTERY STATE, AND RAW ADC (IN CASE OF BAD CALIBRATION) -->
+    <node pkg="rosbag" type="record" name="rosbag_record_power" args="record -o $(arg data_dir)/power thrusters energy odometry/filtered"/>
+    <!-- TODO: CATKIN_MAKE ON ASV (NEW MESSAGE IN ASV_ENERGY/POWER_MODULE.PY) -->
+    <!-- TODO: CHECK POWER_MODULE.PY IS WORKING, CHECK THAT TOPICS ARE BEING RECORDED CORRECTLY TO THE DATA_DIR ON THE RPI -->
+    <!-- TODO: CHECK ENERGY MONITOR (AGGREGATE POWER INSTANTANEOUS POWER CONSUMPTION) -->
+    <!-- TODO: RECORD HOTEL LOAD (20 MINS = 20*60*10 = 12000 DATAPOINTS.. GOOD AMOUNT OF TIME -->
+    <!-- TODO: RECORD POWER CONSUMPTION FOR EACH THRUSTER (RESTRAIN) -->
+    <!-- TODO: RECORD POWER CONSUMPTION WITH VARIOUS STEPPED THRUSTS -->
+    <!-- TODO: RECORD POWER CONSUMPTION WITH RANDOM THRUST COMMAND DISTRIBUTION -->
 </launch>

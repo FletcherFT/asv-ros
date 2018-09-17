@@ -2,14 +2,14 @@
 # License: Public Domain
 import rospy
 import numpy as np
-
 # Import the ADS1x15 module.
 import Adafruit_ADS1x15
 from std_msgs.msg import Float32, String
+from sensor_msgs.msg import BatteryState
+from asv_energy.msg import Readings
 
 # Create an ADS1115 ADC (16-bit) instance.
 adc = Adafruit_ADS1x15.ADS1115()
-
 # Choose a gain of 1 for reading voltages from 0 to 4.09V.
 # Or pick a different gain to change the range of voltages that are read:
 #  - 2/3 = +/-6.144V
@@ -29,21 +29,22 @@ VOLTAGE_PIN = 3
 # Main loop.
 def main():
     rospy.init_node("adc_reader")
-    battery_type=rospy.get_param("~battery_type",0)
-    battery_volt=rospy.get_param("~battery_volt",12.0)
-    battery_design_capacity=rospy.get_param('~design_capacity',9000) # capacity of battery in mAh
-
-    pub = rospy.Publisher("adc",String,queue_size=1)
+    battery_type=rospy.get_param("~type","Pb")
+    battery_volt=rospy.get_param("~V",12.0)
+    battery_design_capacity=rospy.get_param('~C',7) # capacity of battery in Ah
+    reading_pub = rospy.Publisher("energy/adc_raw",String,queue_size=10)
+    battery_pub = rospy.Publisher("energy/battery",BatteryState,queue_size=10)
     hz = rospy.Rate(10)
     rospy.loginfo('Reading ADS1x15 values, press Ctrl-C to quit...')
     # Print nice channel column headers.
     rospy.logdebug('| {0:>6} | {1:>6} | {2:>6} | {3:>6} |'.format(*range(4)))
     rospy.logdebug('-' * 37)
+    battery_msg = BatteryState()
+    reading_msg = Readings()
     try:
         while not rospy.is_shutdown():
             # Read all the ADC channel values in a list.
             raw = np.zeros(4)
-            current = np.zeros(4)
             for i in range(4):
                 # Read the specified ADC channel using the previously set gain value.
                 raw[i] = adc.read_adc(i, gain=GAIN)
@@ -57,8 +58,16 @@ def main():
             values = FACTORS*(raw)+ZEROS
             # Print the ADC values.
             rospy.logdebug('| {0:>6} | {1:>6} | {2:>6} | {3:>6} |'.format(*values))
-            # Pause for half a second.
-            pub.publish('| {0:>6} | {1:>6} | {2:>6} | {3:>6} |'.format(*values))
+            battery_msg.header.stamp = rospy.Time.now()
+            battery_msg.header.frame_id = 'adc'
+            battery_msg.voltage = values[3]
+            battery_msg.current = values[0]
+            battery_msg.design_capacity = battery_design_capacity
+            battery_msg.present = True
+            battery_pub.publish(battery_msg)
+            reading_msg.header = battery_msg.header
+            reading_msg.data = values
+            reading_pub.publish(reading_msg)
             hz.sleep()
     except rospy.ROSInterruptException:
         print("Exiting")
