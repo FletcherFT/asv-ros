@@ -7,6 +7,8 @@
         <remap from="gps/fix" to="ublox_gps/fix"/>
         <rosparam command="load" file="$(find asv_control)/params/sim_settings.yaml"/>
     </node>
+    <!-- BRINGUP A PATH PUBLISHER TO SEE THE TRAJECTORY -->
+    <node name="path_publisher" type="path_visualisation.py" pkg="data_analysis_pkg"/>
     <!-- BRINGUP STATE ESTIMATION -->
 	<include file="$(find asv_navigation)/launch/ekf.launch"/>
     <!-- BRINGUP HARDWARE CONTROLLERS -->

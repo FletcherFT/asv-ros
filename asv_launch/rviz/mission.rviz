@@ -30,7 +30,7 @@ Panels:
 Visualization Manager:
   Class: ""
   Displays:
-    - Angle Tolerance: 0.100000001
+    - Angle Tolerance: 0.0199999996
       Class: rviz/Odometry
       Covariance:
         Orientation:
@@ -112,39 +112,19 @@ Visualization Manager:
       Value: true
       Zoom: 18
     - Class: rviz/TF
-      Enabled: true
+      Enabled: false
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        base_link:
-          Value: true
-        gps_link:
-          Value: false
-        imu_link:
-          Value: false
-        imu_link_ned:
-          Value: false
-        odom:
-          Value: true
-        utm:
-          Value: true
       Marker Scale: 300
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        utm:
-          odom:
-            base_link:
-              gps_link:
-                {}
-              imu_link:
-                {}
-              imu_link_ned:
-                {}
+        {}
       Update Interval: 0
-      Value: true
+      Value: false
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
@@ -161,7 +141,7 @@ Visualization Manager:
         Y: 0
         Z: 0
       Pose Color: 255; 85; 255
-      Pose Style: Axes
+      Pose Style: None
       Radius: 1
       Shaft Diameter: 20
       Shaft Length: 100
@@ -210,7 +190,7 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Scale: 3.41921663
+      Scale: 7.87361622
       Target Frame: base_link
       Value: TopDownOrtho (rviz)
       X: 0
