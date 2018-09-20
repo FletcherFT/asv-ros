@@ -7,6 +7,8 @@ import Adafruit_ADS1x15
 from std_msgs.msg import Float32, String
 from sensor_msgs.msg import BatteryState
 from asv_energy.msg import Readings
+from filters import lowpass
+
 
 # Create an ADS1115 ADC (16-bit) instance.
 adc = Adafruit_ADS1x15.ADS1115()
@@ -26,6 +28,7 @@ ZEROS = np.array([-65.019643478960049,0.0,0.0,0.107945780783920])
 CURRENT_PIN = 0
 VOLTAGE_PIN = 3
 
+
 # Main loop.
 def main():
     rospy.init_node("adc_reader")
@@ -37,6 +40,10 @@ def main():
     hz = rospy.Rate(10)
     rospy.loginfo('Reading ADS1x15 values, press Ctrl-C to quit...')
     # Print nice channel column headers.
+    filters = []
+    cutoffs = rospy.get_param('~cutoffs',[0.05,4,4,2])
+    for i in range(4):
+        filters.append(lowpass.LowPass(10,cutoffs[i],10,order=3))
     rospy.logdebug('| {0:>6} | {1:>6} | {2:>6} | {3:>6} |'.format(*range(4)))
     rospy.logdebug('-' * 37)
     battery_msg = BatteryState()
@@ -47,7 +54,7 @@ def main():
             raw = np.zeros(4)
             for i in range(4):
                 # Read the specified ADC channel using the previously set gain value.
-                raw[i] = adc.read_adc(i, gain=GAIN)
+                raw[i] = filters[i].update(adc.read_adc(i, gain=GAIN))
                 # Note you can also pass in an optional data_rate parameter that controls
                 # the ADC conversion time (in samples/second). Each chip has a different
                 # set of allowed data rate values, see datasheet Table 9 config register
