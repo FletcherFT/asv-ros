@@ -4,13 +4,11 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
-  message_generation
+  asv_messages
 )
 
-add_message_files(DIRECTORY msg FILES Plan.msg Task.msg)
-
-generate_messages(DEPENDENCIES std_msgs asv_mission)
-
-catkin_package()
+catkin_package(
+  CATKIN_DEPENDS asv_messages
+)
 
 include_directories(${catkin_INCLUDE_DIRS})

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import rospy
 from sensor_msgs.msg import BatteryState
-from asv_energy.msg import Float64Stamped
+from asv_messages.msg import Float64Stamped
 from std_srvs.srv import Trigger
 
 class EnergyMonitor:

@@ -6,7 +6,7 @@ import numpy as np
 import Adafruit_ADS1x15
 from std_msgs.msg import Float32, String
 from sensor_msgs.msg import BatteryState
-from asv_energy.msg import Readings
+from asv_messages.msg import Readings
 from filters import lowpass
 
 

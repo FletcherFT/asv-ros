@@ -3,8 +3,8 @@ import rospy
 import serial
 import struct
 from std_srvs.srv import Trigger
-from asv_control_msgs.msg import Thrusters
-from asv_control_msgs.srv import ConfigureSteppers
+from asv_messages.msg import Thrusters
+from asv_messages.srv import ConfigureSteppers
 
 class ardudriver:
     def __init__(self):

@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import rospy
-from asv_mission.msg import Plan, Task
+from asv_messages.msg import Plan, Task
 
 def main():
     rospy.init_node("testmissionpublisher")

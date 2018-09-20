@@ -2,7 +2,7 @@
 import rospy
 from std_msgs.msg import String
 from std_srvs.srv import SetBool
-from asv_control_msgs.srv import ConfigureSteppers
+from asv_messages.srv import ConfigureSteppers
 
 def selectCallback(msg):
     token=msg.data.split("/")[-1]

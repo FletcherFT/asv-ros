@@ -13,7 +13,7 @@
   <run_depend>asv_navigation</run_depend>
   <run_depend>asv_guidance</run_depend>
   <run_depend>asv_control</run_depend>
-  <run_depend>asv_control_msgs</run_depend>
+  <run_depend>asv_messages</run_depend>
   <run_depend>asv_energy</run_depend>
   <run_depend>asv_failsafe</run_depend>
   <run_depend>asv_mission</run_depend>

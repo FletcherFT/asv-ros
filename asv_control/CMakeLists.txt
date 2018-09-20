@@ -4,10 +4,9 @@ project(asv_control)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
-  asv_control_msgs
   std_msgs
   dynamic_reconfigure
-  std_srvs
+  asv_messages
 )
 
 #catkin_python_setup()
@@ -19,17 +18,9 @@ find_package(catkin REQUIRED COMPONENTS
  )
 
 catkin_package(
-  CATKIN_DEPENDS asv_control_msgs
+  CATKIN_DEPENDS asv_messages
 )
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
 )
-
-#install(PROGRAMS
-#  scripts/my_python_script
-#  src/asv_control/pose_controller.py
-#  src/asv_control/nav_sim.py
-#  src/asv_control/qp_allocation.py
-#  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-#)

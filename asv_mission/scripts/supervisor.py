@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import rospy
-from asv_mission.msg import Plan, Task
+from asv_messages.msg import Plan, Task
 from sensor_msgs.msg import Joy
 from std_srvs.srv import Trigger, SetBool
 from std_msgs.msg import String
@@ -63,53 +63,62 @@ class Supervisor:
         geo_msg.header.stamp = rospy.Time.now()
         if task.action == "wp":
             # waypoint task, configure for AP mode to a GPS waypoint.
-            try:
-                rospy.wait_for_service("control_topic_mux/select",5.0)
-            except:
-                rospy.logerr("No control_topic_mux/select service found, is controlmanager.py running?")
-                return [False,"No control_topic_mux/select service found, is controlmanager.py running?"]
-            service_handle = rospy.ServiceProxy('control_topic_mux/select', MuxSelect)
-            service_handle("/tau_com/AP")
-            geo_msg.pose.position.altitude=-1
-            geo_msg.pose.position.latitude=task.data[0]
-            geo_msg.pose.position.longitude=task.data[1]
-            geo_msg.pose.orientation = Quaternion(0,0,0,1)
-            self.task_pub.publish(geo_msg)
-            return [True,"Waypoint Task Selected, executing."]
+            if self.changeMode("/tau_com/AP"):
+                geo_msg.pose.position.altitude=-1
+                geo_msg.pose.position.latitude=task.data[0]
+                geo_msg.pose.position.longitude=task.data[1]
+                geo_msg.pose.orientation = Quaternion(0,0,0,1)
+                self.task_pub.publish(geo_msg)
+                return [True,"Waypoint Task Selected, executing."]
+            else:
+                return [False,"Mode not configured to AP."]
         elif task.action == "hp":
             # hold position task, configure DP mode at a GPS waypoint and orientation for a set time.
-            try:
-                rospy.wait_for_service("control_topic_mux/select",5.0)
-            except:
-                rospy.logerr("No control_topic_mux/select service found, is controlmanager.py running?")
-                return [False,"No control_topic_mux/select service found, is controlmanager.py running?"]
-            service_handle = rospy.ServiceProxy('control_topic_mux/select', MuxSelect)
-            service_handle("/tau_com/DP")
-            geo_msg.pose.position.altitude=0
-            geo_msg.pose.position.latitude=task.data[0]
-            geo_msg.pose.position.longitude=task.data[1]
-            geo_msg.pose.orientation = Quaternion(*tf.quaternion_from_euler(0,0,task.data[2]))
-            self.hptime = task.data[3]
-            self.hptask = True
-            self.task_pub.publish(geo_msg)
-            return [True,"Hold Pose Task Selected, executing."]
+            if self.changeMode("/tau_com/DP"):
+                geo_msg.pose.position.altitude=0
+                geo_msg.pose.position.latitude=task.data[0]
+                geo_msg.pose.position.longitude=task.data[1]
+                geo_msg.pose.orientation = Quaternion(*tf.quaternion_from_euler(0,0,task.data[2]))
+                self.hptime = task.data[3]
+                self.hptask = True
+                self.task_pub.publish(geo_msg)
+                return [True,"Hold Pose Task Selected, executing."]
+            else:
+                return [False,"Mode not configured to DP."]
         elif task.action == "root":
             # root task reached, notify the operator that the mission is complete.
-            try:
-                rospy.wait_for_service("control_topic_mux/select",5.0)
-            except:
-                rospy.logerr("No control_topic_mux/select service found, is controlmanager.py running?")
-                return [False,"No control_topic_mux/select service found, is controlmanager.py running?"]
-            service_handle = rospy.ServiceProxy('control_topic_mux/select', MuxSelect)
-            service_handle("__none")
-            self.mode="idle"
-            self.status_pub.publish("ASV currently in mode: {}".format(self.mode))
-            rospy.loginfo("Final task completed, now idling.")
-            return [True,"Final task completed, now idling."]
+            if self.changeMode("__none"):
+                self.mode="idle"
+                self.status_pub.publish("ASV currently in mode: {}".format(self.mode))
+                rospy.loginfo("Final task completed, now idling.")
+                return [True,"Final task completed, now idling."]
+            else:
+                rospy.logerr("Couldn't disable output topic, but mission complete.")
+        elif task.action == "start":
+            # start task, is a waypoint task to move the vehicle to the starting position.
+            if self.changeMode("/tau_com/AP"):
+                geo_msg.pose.position.altitude=-1
+                geo_msg.pose.position.latitude=task.data[0]
+                geo_msg.pose.position.longitude=task.data[1]
+                geo_msg.pose.orientation = Quaternion(0,0,0,1)
+                self.task_pub.publish(geo_msg)
+                rospy.loginfo("Moving to starting waypoint of plan.")
+            else:
+                rospy.logerr("Couldn't configure to AP mode.")
         else:
             rospy.logerr("Task of type {} is not supported, getting next task.".format(task.action))
             self.plan.taskDone()
             return self.parseTask(self.plan.getTask())
+
+    def changeMode(self,request):
+        try:
+            rospy.wait_for_service("control_topic_mux/select",5.0)
+        except:
+            rospy.logerr("No control_topic_mux/select service found, is controlmanager.py running?")
+            return [False,"No control_topic_mux/select service found, is controlmanager.py running?"]
+        service_handle = rospy.ServiceProxy('control_topic_mux/select', MuxSelect)
+        service_handle(request)
+        return True
 
     def receivePlanCallback(self,plan_msg):
         # parse the received Plan message

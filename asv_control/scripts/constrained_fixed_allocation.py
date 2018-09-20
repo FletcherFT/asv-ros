@@ -6,8 +6,8 @@ from numpy import vstack, hstack, shape, diag, array, reshape, eye, zeros, ones,
 import numpy as np
 from scipy.linalg import block_diag
 from math import cos, sin, pi, radians, degrees
-from asv_control_msgs.msg import Thrusters
-from asv_control_msgs.srv import ConfigureSteppers
+from asv_messages.msg import Thrusters
+from asv_messages.srv import ConfigureSteppers
 import quadprog
 
 def quadprog_solve_qp(P, q, G=None, h=None, A=None, b=None):
