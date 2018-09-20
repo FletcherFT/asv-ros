@@ -153,7 +153,15 @@ Visualization Manager:
       Marker Topic: guidance/current
       Name: Current Target
       Namespaces:
-        guidance/current: true
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /mission/markers
+      Name: Plan
+      Namespaces:
+        {}
       Queue Size: 100
       Value: true
   Enabled: true
