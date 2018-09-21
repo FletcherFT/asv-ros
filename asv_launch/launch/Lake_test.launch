@@ -8,7 +8,7 @@
     <!-- BRINGUP NAVIGATION -->
 	<include file="$(find asv_launch)/launch/bringup_navigation.launch"/>
     <!-- BRINGUP CONTROL -->
-    <include file="$(find asv_launch)/launch/bringup_control.launc"/>
+    <include file="$(find asv_launch)/launch/bringup_control.launch"/>
     <!-- BRINGUP COMMUNICATIONS -->
     <include file="$(find asv_launch)/launch/bringup_comms.launch">
         <arg name="xbee_device" value="$(arg xbee_device)"/>
@@ -20,7 +20,9 @@
     <!-- BRINUPG THE ENERGY MODULES -->
     <include file="$(find asv_energy)/launch/power_systems.launch"/>
     <!-- BRINGUP LOGGER -->
-    <include file="$(find asv_launch)/launch/bringup_logger.launch">
-        <arg name="topics2log" value="$(arg topics2log)"/>
-    </include>
+    <group if="$(arg log)">
+        <include file="$(find asv_launch)/launch/bringup_logger.launch">
+            <arg name="topics2log" value="$(arg topics2log)"/>
+        </include>
+    </group>
 </launch>
