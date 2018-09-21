@@ -20,5 +20,5 @@ class LowPass:
         if len(self._buff)<2:
             return datapoint
         else:
-            self._buff = lfilter(self._b,self._a,self._buff)
-            return self._buff[-1]
+            vals = lfilter(self._b,self._a,self._buff)
+            return vals[-1]

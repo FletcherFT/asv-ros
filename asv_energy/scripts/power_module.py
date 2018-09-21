@@ -41,7 +41,7 @@ def main():
     rospy.loginfo('Reading ADS1x15 values, press Ctrl-C to quit...')
     # Print nice channel column headers.
     filters = []
-    cutoffs = rospy.get_param('~cutoffs',[0.05,4,4,2])
+    cutoffs = rospy.get_param('~cutoffs',[4,4,4,4])
     for i in range(4):
         filters.append(lowpass.LowPass(10,cutoffs[i],10,order=3))
     rospy.logdebug('| {0:>6} | {1:>6} | {2:>6} | {3:>6} |'.format(*range(4)))
@@ -54,7 +54,8 @@ def main():
             raw = np.zeros(4)
             for i in range(4):
                 # Read the specified ADC channel using the previously set gain value.
-                raw[i] = filters[i].update(adc.read_adc(i, gain=GAIN))
+                #raw[i] = filters[i].update(adc.read_adc(i, gain=GAIN))
+                raw[i] = adc.read_adc(i, gain=GAIN)
                 # Note you can also pass in an optional data_rate parameter that controls
                 # the ADC conversion time (in samples/second). Each chip has a different
                 # set of allowed data rate values, see datasheet Table 9 config register
@@ -63,6 +64,8 @@ def main():
                 # Each value will be a 12 or 16 bit signed integer value depending on the
                 # ADC (ADS1015 = 12-bit, ADS1115 = 16-bit).
             values = FACTORS*(raw)+ZEROS
+            for i in range(4):
+                values[i] = filters[i].update(values[i])
             # Print the ADC values.
             rospy.logdebug('| {0:>6} | {1:>6} | {2:>6} | {3:>6} |'.format(*values))
             battery_msg.header.stamp = rospy.Time.now()
