@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="xbee_device" default="/dev/ttyUSB1"/>
+    <arg name="log" default="false"/>
+    <arg name="topics2log" default="energy/aggregate energy/battery odometry/filtered"/>
+    <!-- BRINGUP GUIDANCE -->
+    <include file="$(find asv_launch)/launch/bringup_guidance.launch"/>
+    <!-- BRINGUP NAVIGATION -->
+	<include file="$(find asv_launch)/launch/bringup_navigation.launch"/>
+    <!-- BRINGUP CONTROL -->
+    <include file="$(find asv_launch)/launch/bringup_control.launc"/>
+    <!-- BRINGUP COMMUNICATIONS -->
+    <include file="$(find asv_launch)/launch/bringup_comms.launch">
+        <arg name="xbee_device" value="$(arg xbee_device)"/>
+    </include>
+    <!-- BRINGUP HMI -->
+    <include file="$(find asv_launch)/launch/bringup_hmi.launch"/>
+    <!-- BRINGUP HIGH LEVEL CONTROL -->
+    <node pkg="asv_mission" type="supervisor.py" name="supervisor" output="screen"/>
+    <!-- BRINUPG THE ENERGY MODULES -->
+    <include file="$(find asv_energy)/launch/power_systems.launch"/>
+    <!-- BRINGUP LOGGER -->
+    <include file="$(find asv_launch)/launch/bringup_logger.launch">
+        <arg name="topics2log" value="$(arg topics2log)"/>
+    </include>
+</launch>

@@ -12,4 +12,5 @@
 	<node machine="shoreside" pkg="rqt_console" type="rqt_console" name="console"/>
 	<node machine="shoreside" pkg="rqt_logger_level" type="rqt_logger_level" name="log_level"/>
 	<node machine="shoreside" pkg="rqt_reconfigure" type="rqt_reconfigure" name="reconfigure"/>
+	<node machine="shoreside" pkg="asv_navigation" type="path_visualisation.py" name="path_vis"/>
 </launch>
