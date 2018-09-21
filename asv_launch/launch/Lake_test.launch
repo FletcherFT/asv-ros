@@ -2,7 +2,7 @@
 <launch>
     <arg name="xbee_device" default="/dev/ttyUSB1"/>
     <arg name="log" default="false"/>
-    <arg name="topics2log" default="energy/aggregate energy/battery odometry/filtered"/>
+    <arg name="topics2log" default="-a"/>
     <!-- BRINGUP GUIDANCE -->
     <include file="$(find asv_launch)/launch/bringup_guidance.launch"/>
     <!-- BRINGUP NAVIGATION -->
