@@ -3,5 +3,5 @@
     <arg name="topics2log" default="-a"/>
     <arg name="topics2exclude" default=""/>
     <arg name="data_dir" default="/home/ubuntu/data_capture"/>
-    <node pkg="rosbag" type="record" name="logging" args="record -o $(arg data_dir)/flightdata $(arg topics2log) $(arg topics2exclude)"/>
+    <node pkg="rosbag" type="record" name="logging" args="record -o $(arg data_dir)/flightdata $(arg topics2log) $(arg topics2exclude)" required="true"/>
 </launch>
