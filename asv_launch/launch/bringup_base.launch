@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="xbee_device" default="/dev/ttyUSB1"/>
+    <!-- BRINGUP GUIDANCE -->
+    <include file="$(find asv_launch)/launch/bringup_guidance.launch"/>
+    <!-- BRINGUP NAVIGATION -->
+	<include file="$(find asv_launch)/launch/bringup_navigation.launch"/>
+    <!-- BRINGUP CONTROL -->
+    <include file="$(find asv_launch)/launch/bringup_control.launch"/>
+    <!-- BRINGUP COMMUNICATIONS -->
+    <include file="$(find asv_launch)/launch/bringup_comms.launch">
+        <arg name="xbee_device" value="$(arg xbee_device)"/>
+    </include>
+    <!-- BRINGUP HIGH LEVEL CONTROL -->
+    <node pkg="asv_mission" type="supervisor.py" name="supervisor" output="screen"/>
+    <!-- BRINUPG THE ENERGY MODULES -->
+    <include file="$(find asv_energy)/launch/power_systems.launch"/>
+</launch>
