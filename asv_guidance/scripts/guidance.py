@@ -10,6 +10,7 @@ from topic_tools.srv import MuxSelect
 from nav_msgs.msg import Odometry
 from std_msgs.msg import ColorRGBA
 from std_srvs.srv import Trigger
+from asv_messages.srv import UTMService, UTMServiceResponse
 from visualization_msgs.msg import Marker, MarkerArray
 
 import tf2_ros
@@ -44,13 +45,38 @@ class guidance:
         self.override = PoseStamped()
         self.automate = PoseStamped()
 
+        self.northing = None
+        self.easting = None
+        self.latitude = None
+        self.longitude = None
+        self.pose_meas = None
+
         self.resume = rospy.Service('guidance/resume', Trigger, self.handle_resume)
+        self.utmrequest = rospy.Service('guidance/utmrequest', UTMService, self.handleUTMRequest)
         # subscribers
         rospy.Subscriber("guidance/operator",PoseStamped,self.override_cb)
         rospy.Subscriber("guidance/task",GeoPoseStamped,self.task_cb)
         rospy.Subscriber("odometry/filtered",Odometry,self.measure_cb)
         # fidget spinner
         rospy.spin()
+
+    def handleUTMRequest(self,req):
+        self.odom2utm()
+        response = UTMServiceResponse()
+        if not self.northing is None and not self.easting is None:
+            response.easting = self.easting
+            response.northing = self.northing
+            response.latitude = self.latitude
+            response.longitude = self.longitude
+            response.success = True
+            return response 
+        else:
+            response.easting = 0
+            response.northing = 0
+            response.latitude = 0
+            response.longitude = 0
+            response.success = False
+            return [False,0,0]
 
     def handle_resume(self,req):
         if self.manual:
@@ -79,15 +105,6 @@ class guidance:
     def override_cb(self,msg):
         self.manual = True
         self.notified = False
-        #try: 
-        #    rospy.wait_for_service("control_topic_mux/select",1.0)
-        #except:
-        #    pass
-        #else:
-        #    # call trigger service to switch to dynamic positioning
-        #    service_handle = rospy.ServiceProxy('control_topic_mux/select', MuxSelect)
-        #    service_handle("tau_com/AP")
-        #    rospy.sleep(rospy.Duration(1))
         if self.tfBuffer.can_transform(msg.header.frame_id,"odom",rospy.Time.now(),rospy.Duration.from_sec(5)):
             rospy.loginfo("{}: New override waypoint at ({},{},{})".format(rospy.get_name(),msg.pose.position.x,msg.pose.position.y,msg.header.frame_id))
             self.override = self.tfListener.transformPose("odom",msg) #TF2 FOR KINETIC JUST AIN'T WORKING
@@ -122,6 +139,23 @@ class guidance:
         else:
             rospy.logwarn("{}: Manual waypoint override in effect, call guidance/resume service to resume.".format(rospy.get_name()))
 
+    def odom2utm(self):
+        if self.pose_meas is None:
+            return None
+        pose_msg = PoseStamped()
+        pose_msg.header.stamp=rospy.Time.now()-rospy.Duration(0.05)
+        pose_msg.header.frame_id='odom'
+        pose_msg.pose = self.pose_meas
+        if self.tfBuffer.can_transform(pose_msg.header.frame_id,"utm",rospy.Time.now(),rospy.Duration.from_sec(5)):
+            utm_msg = self.tfListener.transformPose("utm",pose_msg) #TF2 FOR KINETIC JUST AIN'T WORKING
+            self.northing = utm_msg.pose.position.y
+            self.easting = utm_msg.pose.position.x
+            UTMpoint = utm.Utm(55,'S',self.easting,self.northing)
+            (self.latitude, self.longitude, _, _, _) = UTMpoint.toLatLon(None)
+        else:
+            rospy.logerr("{}: No TF between {} and utm!".format(rospy.get_name(),pose_msg.header.frame_id))
+            return None
+
     def update_goal(self,setpoint_msg):
         array_msg = MarkerArray()
         array_msg.markers = []
@@ -148,6 +182,7 @@ class guidance:
         self.marker_pub.publish(array_msg)
 
     def measure_cb(self,msg):
+        self.pose_meas = msg.pose.pose
         pose_meas = msg.pose.pose.position
         orientation = msg.pose.pose.orientation
         yaw_meas = tf_conversions.transformations.euler_from_quaternion((orientation.x,orientation.y,orientation.z,orientation.w))[2]

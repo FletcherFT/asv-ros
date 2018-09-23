@@ -6,6 +6,8 @@ float64[] cost_mu # list of completed task energy measurements
 float64[] cost_std # list of completed task energy standard deviations
 float64 northing # Northing (utm) of vehicle's current position
 float64 easting  # Easting (utm) of vehicle's current position
+float64 latitude # Latitude of vehicle's current position.
+float64 longitude #Longitude of vehicle's current position.
 ---
 bool success # letting the vehicle know to listen for plan
 string message # status update from mission planner.

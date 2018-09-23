@@ -5,7 +5,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
-  asv_control_msgs
+  asv_messages
 )
 
 catkin_package(
@@ -13,7 +13,7 @@ catkin_package(
 #  LIBRARIES asv_launch
 #  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
-CATKIN_DEPENDS asv_control_msgs
+CATKIN_DEPENDS asv_messages
 )
 
 include_directories(
