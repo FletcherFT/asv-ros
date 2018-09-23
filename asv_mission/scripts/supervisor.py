@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import rospy
-from asv_messages.msg import Plan, Task, Float64Stamped
+from asv_messages.msg import Plan, Task, Float64Stamped, Readings
 from asv_messages.srv import PlanService, PlanServiceRequest, UTMService
 from sensor_msgs.msg import Joy
 from std_srvs.srv import Trigger, SetBool
@@ -44,6 +44,7 @@ class Supervisor:
         self._replan_flag = False
         self.aware = False
         rospy.init_node("supervisor")
+        self.survival_pub = rospy.Publisher('supervisor/survival',Readings,queue_size=10)
         self.recourse_pub = rospy.Publisher('supervisor/recourse',Int8,queue_size=10)
         self.task_pub = rospy.Publisher('guidance/task',GeoPoseStamped,queue_size=10)
         self.status_pub = rospy.Publisher("asv/status",String,queue_size=10)
@@ -71,32 +72,35 @@ class Supervisor:
 
             if not self._task_nd is None and not self._plan_nd is None:
                 # GET THE SURVIVAL FUNCTION OF THE TASK
-                if not self._task_nd is None:
-                    # The intersection probability density function is
-                    intersection_mu = self.intersection_mean(self._task_nd.mean(),self._energy_measured_mu,self._task_nd.var(),self._energy_measured_std**2)
-                    rospy.logdebug("Task intersection mu: {}".format(intersection_mu))
-                    survival_task = self._task_nd.sf(intersection_mu)
+                # The intersection probability density function is
+                intersection_mu = self.intersection_mean(self._task_nd.mean(),self._energy_measured_mu,self._task_nd.var(),self._energy_measured_std**2)
+                rospy.logdebug("Task intersection mu: {}".format(intersection_mu))
+                survival_task = self._task_nd.sf(intersection_mu)
 
                 # GET THE SURVIVAL FUNCTION OF THE PLAN
-                if not self._plan_nd is None:
-                    # accumulate the completed task energies (+ the current)
-                    depleted_mu = sum(self._completed_mu)+self._energy_measured_mu
-                    depleted_var = sum([x**2 for x in self._completed_std])+self._energy_measured_sigma
-                    rospy.logdebug("Depleted mu: {}\t Depleted var: {}".format(depleted_mu,depleted_var))
-                    # have to sum up all of the tasks expected energies that have yet to be done in the plan (excluding the current one)
-                    tasks_todo = [self.plan.plan[i] for idx,i in enumerate(self.plan._todo) if self.plan._todo[idx]!=self.plan._current]
-                    todo_mu = sum([x.cost_mu for x in tasks_todo if x.action!='ROOT'])
-                    todo_var = sum([x.cost_std**2 for x in tasks_todo if x.action!='ROOT'])
-                    rospy.logdebug("Remaining mu: {}\t Remaining var: {}".format(todo_mu,todo_var))
-                    # sum the depleted mean with the todo mean, var with var
-                    hybrid_mu = todo_mu+depleted_mu
-                    hybrid_var = depleted_var+todo_var
-                    rospy.logdebug("Hybrid mu: {}\t Hybrid std: {}".format(hybrid_mu,hybrid_var))
-                    intersection_mu = self.intersection_mean(self._plan_nd.mean(),hybrid_mu,self._plan_nd.var(),hybrid_var)
-                    rospy.logdebug("Plan intersection mu: {}".format(intersection_mu))
-                    survival_plan = self._plan_nd.sf(intersection_mu)
-                    rospy.logdebug("Battery cap: {}".format(self._battery_capacity))
-                    survival_vehicle = self._vehicle_nd.sf(hybrid_mu)
+                # accumulate the completed task energies (+ the current)
+                depleted_mu = sum(self._completed_mu)+self._energy_measured_mu
+                depleted_var = sum([x**2 for x in self._completed_std])+self._energy_measured_sigma
+                rospy.logdebug("Depleted mu: {}\t Depleted var: {}".format(depleted_mu,depleted_var))
+                # have to sum up all of the tasks expected energies that have yet to be done in the plan (excluding the current one)
+                tasks_todo = [self.plan.plan[i] for idx,i in enumerate(self.plan._todo) if self.plan._todo[idx]!=self.plan._current]
+                todo_mu = sum([x.cost_mu for x in tasks_todo if x.action!='ROOT'])
+                todo_var = sum([x.cost_std**2 for x in tasks_todo if x.action!='ROOT'])
+                rospy.logdebug("Remaining mu: {}\t Remaining var: {}".format(todo_mu,todo_var))
+                # sum the depleted mean with the todo mean, var with var
+                hybrid_mu = todo_mu+depleted_mu
+                hybrid_var = depleted_var+todo_var
+                rospy.logdebug("Hybrid mu: {}\t Hybrid std: {}".format(hybrid_mu,hybrid_var))
+                intersection_mu = self.intersection_mean(self._plan_nd.mean(),hybrid_mu,self._plan_nd.var(),hybrid_var)
+                rospy.logdebug("Plan intersection mu: {}".format(intersection_mu))
+                survival_plan = self._plan_nd.sf(intersection_mu)
+                rospy.logdebug("Battery cap: {}".format(self._battery_capacity))
+                survival_vehicle = self._vehicle_nd.sf(hybrid_mu)
+                msg = Readings()
+                msg.header.frame_id="supervisor"
+                msg.header.stamp = rospy.Time.now()
+                msg.data = [survival_vehicle,survival_plan,survival_task]
+                self.survival_pub.publish(msg)
                 # ASSESS THE SURVIVAL FUNCTIONS OF THE VEHICLE, PLAN, AND TASK IN THAT PRIORITY
                 # IF THE VEHICLE IS STILL SAFE
                 if survival_vehicle > self._vehicle_soft_limit:
@@ -134,7 +138,9 @@ class Supervisor:
                     rospy.logwarn("Task has failed, trigerring replan.")
                     self.replanRecourse(2)
                 formatstring = 3*"| {} \t"+"|"
-                rospy.loginfo(formatstring.format(survival_vehicle,survival_plan,survival_task))       
+                rospy.logdebug(formatstring.format(survival_vehicle,survival_plan,survival_task)) 
+                
+
 
     def replanRecourse(self,fault):
         # Log the replan recourse action.
@@ -249,12 +255,13 @@ class Supervisor:
         # new task, so make sure the energy aggregator is suppressed until reset
         self._energy_datum = self._energy_measured_total
         self._energy_measured_std = self._energy_measured_sigma
-        if task.action!='START':
-            if task.cost_mu==0 or task.cost_std ==0:
-                rospy.logwarn("Buggy task, skipping. {}".format(task))
-                self.plan.taskDone()
-                self.parseTask(self.plan.getTask())
-                return [True,"Going to next task."]
+        if self.aware:
+            if task.action!='START':
+                if task.cost_mu==0 or task.cost_std ==0:
+                    rospy.logwarn("Buggy task, skipping. {}".format(task))
+                    self.plan.taskDone()
+                    self.parseTask(self.plan.getTask())
+                    return [True,"Going to next task."]
         
         geo_msg = GeoPoseStamped()
         geo_msg.header.frame_id="utm"
