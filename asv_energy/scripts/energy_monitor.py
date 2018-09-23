@@ -13,7 +13,7 @@ class EnergyMonitor:
         self._energy_pub = rospy.Publisher('energy/aggregate',Float64Stamped,queue_size=10)
         self._power_msg = Float64Stamped()
         self._energy_msg = Float64Stamped()
-        self._energy_datum_srv = rospy.Service("energy/datum",Trigger,self.datumCallback)
+        self._energy_datum_srv = rospy.Service("energy/reset_aggregator",Trigger,self.datumCallback)
         rospy.Subscriber("energy/battery",BatteryState,self.batteryCallback)
         rospy.spin()
 

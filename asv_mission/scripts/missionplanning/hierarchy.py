@@ -27,6 +27,7 @@ class Hierarchy():
 
         self.plan = plan
         self._complete = []
+        self._todo = range(len(plan))
         self._root = root
         self._current = root
 
@@ -36,6 +37,7 @@ class Hierarchy():
 
     def taskDone(self):
         self._complete.append(self._current)
+        self._todo = [x for x in range(len(self.plan)) if x not in self._complete]
 
     def _findLowest(self):
         while True:

@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import rospy
-from asv_messages.msg import Plan, Task
+from asv_messages.msg import Plan, Task, Float64Stamped
+from asv_messages.srv import RequestPlan
 from sensor_msgs.msg import Joy
 from std_srvs.srv import Trigger, SetBool
 from std_msgs.msg import String
@@ -12,6 +13,8 @@ from tf_conversions import transformations as tf
 from std_msgs.msg import ColorRGBA
 from visualization_msgs.msg import Marker, MarkerArray
 from pygeodesy import utm
+from scipy.stats import norm
+from math import sqrt
 
 class Supervisor:
     def __init__(self):
@@ -19,6 +22,18 @@ class Supervisor:
         self.plan = None
         self.hptask = False
         self.hptime = 0.0
+        self._energy_measured_sigma = rospy.get_param('~power_module_std',0.634184) # the standard deviation of the power module
+        self._task_soft_limit = rospy.get_param('~task_soft_limit',0.5) # the limit for the task survival function before replan is considered.
+        self._task_hard_limit = rospy.get_param('~task_hard_limit',0.4) # the limit for a task when a replan is triggered.
+        self._plan_soft_limit = rospy.get_param('~plan_soft_limit',0.5) # the limit for the plan survival function when a replan is triggered.
+        self._plan_hard_limit = rospy.get_param('~plan_hard_limit',0.4) # the limit for the vehicle survival function.
+        self._vehicle_soft_limit = rospy.get_param('~vehicle_soft_limit',0.55) # the cutoff for the vehicle before considering survival options.
+        self._battery_capacity = rospy.get_param('~battery_capacity',7*12*3600) # the energy capacity of the vehicle's battery system.
+        self._task_nd = None
+        self._plan_nd = None
+        self._energy_measured_mu = None
+        self._completed_mu = []
+        self._completed_std = []
         rospy.init_node("supervisor")
         self.task_pub = rospy.Publisher('guidance/task',GeoPoseStamped,queue_size=10)
         self.status_pub = rospy.Publisher("asv/status",String,queue_size=10)
@@ -26,12 +41,79 @@ class Supervisor:
         self.pause = rospy.Service('supervisor/pause', SetBool, self.pausePlayCallback)
         self.start = rospy.Service('supervisor/start',Trigger,self.startPlanCallback)
         self.nexttask = rospy.Service('supervisor/request_new', Trigger, self.nextTaskCallback)
-
+        
+        rospy.Subscriber("energy/aggregate",Float64Stamped,self.energySampleCallback)
         rospy.Subscriber("mission/plan",Plan,self.receivePlanCallback)
         rospy.Subscriber("guidance/operator",PoseStamped,self.receiveOperatorCallback)
         rospy.Subscriber("joy",Joy,self.receiveManualCallback)
         rospy.spin()
     
+    def energySampleCallback(self,msg):
+        # UPDATE THE ENERGY USED FOR THE CURRENT TASK
+        self._energy_measured_mu = msg.data
+        if not self._task_nd is None and not self._plan_nd is None:
+            # GET THE SURVIVAL FUNCTION OF THE TASK
+            if not self._task_nd is None:
+                # The intersection probability density function is
+                intersection_mu = self.intersection_mean(self._task_nd.mean(),msg.data,self._task_nd.var(),self._energy_measured_sigma**2)
+                survival_task = self._task_nd.sf(intersection_mu)
+
+            # GET THE SURVIVAL FUNCTION OF THE PLAN
+            if not self._plan_nd is None:
+                # accumulate the completed task energies (+ the current)
+                depleted_mu = sum(self._completed_mu)+self._energy_measured_mu
+                depleted_var = sum([x**2 for x in self._completed_std])+self._energy_measured_sigma
+                # have to sum up all of the tasks expected energies that have yet to be done in the plan
+                tasks_todo = [self.plan.plan[i] for i in self.plan._todo]
+                todo_mu = sum([x.cost_mu for x in tasks_todo if x.action!='ROOT'])
+                todo_var = sum([x.cost_std**2 for x in tasks_todo if x.action!='ROOT'])
+                # sum the depleted mean with the todo mean, var with var
+                mixed_mu = todo_mu+depleted_mu
+                mixed_var = depleted_var+todo_var
+                intersection_mu = self.intersection_mean(self._plan_nd.mean(),mixed_mu,self._plan_nd.var(),mixed_var)
+                survival_plan = self._plan_nd.sf(intersection_mu)
+                survival_vehicle = norm.sf(self._battery_capacity,loc=mixed_mu,scale=sqrt(mixed_var))
+
+            replan_flag = False
+            # ASSESS THE SURVIVAL FUNCTIONS OF THE VEHICLE, PLAN, AND TASK IN THAT PRIORITY
+            # IF THE VEHICLE IS STILL SAFE
+            if survival_vehicle > self._vehicle_soft_limit:
+                # VEHICLE IS FINE, MOVE ON TO PLAN
+                pass
+            else:
+                # VEHICLE IN DANGER ZONE, MOVE ON TO EMERGENCY RECOURSES
+                rospy.logwarn("Vehicle in danger zone, returning home.")
+                pass
+            if survival_plan > self._plan_hard_limit:
+                # PLAN HASN'T FAILED YET
+                if survival_plan > self._plan_soft_limit:
+                    # PLAN IS STILL GOOD
+                    pass
+                else:
+                    # PLAN IS APPROACHING FAILURE, TIGHTEN TASK CONSTRAINTS
+                    tmp = self._task_soft_limit+0.1
+                    self._task_soft_limit = max(0.55,tmp)
+            else:
+                # PLAN HAS FAILED, TRIGGER REPLAN.
+                rospy.logwarn("Plan has failed, triggering replan.")
+                pass
+            if survival_task > self._task_hard_limit:
+                # TASK HASN'T FAILED YET
+                if survival_task > self._task_soft_limit:
+                    # TASK IS STILL GOOD
+                    pass
+                else:
+                    # TASK IS APPROACHING FAILURE, LOG A WARNING
+                    rospy.logwarn("Task is approaching failure.")
+            else:
+                # TASK HAS FAILED, TRIGGER REPLAN.
+                rospy.logwarn("Task has failed, trigerring replan.")
+            formatstring = 3*"| {} \t|\t"
+            rospy.loginfo(formatstring.format(survival_vehicle,survival_plan,survival_task))       
+
+    def intersection_mean(self,mu1,mu2,var1,var2):
+        return var2*mu1/(var1+var2)+var1*mu2/(var1+var2)
+
     def receiveManualCallback(self,joy_msg):
         if self.mode=="manual":
             return
@@ -65,6 +147,7 @@ class Supervisor:
         geo_msg = GeoPoseStamped()
         geo_msg.header.frame_id="utm"
         geo_msg.header.stamp = rospy.Time.now()
+        self.checkValidTask(task)
         if task.action == "WP":
             # waypoint task, configure for AP mode to a GPS waypoint.
             if self.changeMode("/tau_com/AP"):
@@ -97,8 +180,9 @@ class Supervisor:
                 rospy.loginfo("Final task completed, now idling.")
                 return [True,"Final task completed, now idling."]
             else:
-                return [False,"Couldn't Idle for some reason?"]
                 rospy.logerr("Couldn't disable output topic, but mission complete.")
+                return [False,"Couldn't Idle for some reason?"]
+                
         elif task.action == "START":
             # start task, is a waypoint task to move the vehicle to the starting position.
             if self.changeMode("/tau_com/AP"):
@@ -144,6 +228,8 @@ class Supervisor:
         # parse the received Plan message
         self.plan = hierarchy.Hierarchy(plan_msg)
         self.home_task = self.plan.home
+        root_task = self.plan.plan[self.plan._root]
+        self._plan_nd = norm(root_task.cost_mu,root_task.cost_std)
         self.updateMissionMarkers()
         rospy.loginfo("Plan received, waiting for start mission service on {}".format(rospy.resolve_name("supervisor/start")))
 
@@ -176,6 +262,8 @@ class Supervisor:
             rospy.sleep(rospy.Duration(self.hptime))
             self.hptask = False
         self.plan.taskDone()
+        self._completed_mu.append(self._energy_measured_mu)
+        self._completed_std.append(self._energy_measured_sigma)
         self.updateMissionMarkers()
         rospy.loginfo("Task done, getting next...")
         return self.parseTask(self.plan.getTask())
@@ -211,10 +299,27 @@ class Supervisor:
                 response = [True,"Mission paused."]
         return response
 
+    def checkValidTask(self,task_msg):
+        if task_msg.cost_mu > 0:
+            self._task_nd = norm(task_msg.cost_mu,task_msg.cost_std)
+        else:
+            self._task_nd = None
+
+    def resetEnergy(self):
+        try:
+            rospy.wait_for_service("energy/reset_aggregator",4.0)
+        except:
+            return False
+        else:
+            service_handle = rospy.ServiceProxy("energy/reset_aggregator",Trigger)
+            success,_ = service_handle()
+        return success
+
     def startPlanCallback(self,request):
         if self.plan is None:
             return [False,"No mission loaded"]
         else:
+            task_msg = self.plan.getTask()
             self.mode="mission"
             self.status_pub.publish("ASV currently in mode: {}".format(self.mode))
             try:
@@ -224,7 +329,7 @@ class Supervisor:
             else:
                 service_handle = rospy.ServiceProxy("guidance/resume",Trigger)
                 response = service_handle()
-            response = self.parseTask(self.plan.getTask())
+            response = self.parseTask(task_msg)
             if response[0]:
                 return [True,"Mission starting: {}".format(response[1])]
             else:
