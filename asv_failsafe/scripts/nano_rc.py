@@ -29,6 +29,8 @@ class nano_rc():
                         self.parse_joystick(data)
         except rospy.ROSInterruptException:
             pass
+        except serial.serialutil.SerialException:
+            pass
 
     def parse_joystick(self,data):
         data = np.array(data)
@@ -42,7 +44,8 @@ class nano_rc():
         rospy.logdebug(data)
         self.joy_msg.header.stamp = rospy.Time.now()
         self.joy_msg.header.frame_id = "override"
-        self.pub.publish(self.joy_msg)
+        if but[0]==1:
+            self.pub.publish(self.joy_msg)
 
 if __name__=="__main__":
     nano_rc()
