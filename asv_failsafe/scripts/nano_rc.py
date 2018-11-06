@@ -37,7 +37,7 @@ class nano_rc():
         but = data[4:]
         but[but<0.5]=0
         but[but>0.5]=1
-        self.joy_msg.axes = ax
+        self.joy_msg.axes = np.around(ax,decimals=2)
         self.joy_msg.buttons = but
         rospy.logdebug(data)
         self.joy_msg.header.stamp = rospy.Time.now()
