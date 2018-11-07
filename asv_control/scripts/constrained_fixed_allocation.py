@@ -34,6 +34,7 @@ class ConstrainedNonrotatableAllocation:
         self.sol_pub = rospy.Publisher("tau_sol",WrenchStamped,queue_size=10)
         self.mode_server = rospy.Service('~modeconfig',ConfigureSteppers,self.mode)
         self.motor_config = rospy.get_param('motorConfig')
+        self.prev_pwms = np.array([0,0,0])
         rospy.Subscriber("tau_com/out",WrenchStamped,self.wrenchCallback)
         rospy.spin()
 
@@ -141,7 +142,17 @@ class ConstrainedNonrotatableAllocation:
         deadband = np.array(self.motor_config['deadband'])
         pwm[pwm<deadband]=0
         pwm[thrusts<0]*=-1
+        deltapwm = pwm-self.prev_pwms
+        aggression = self.motor_config['aggression']
+        for idx,i in enumerate(deltapwm):
+            if abs(i)>aggression:
+                if i<0:
+                    pwm[idx]=self.prev_pwms[idx]-aggression
+                else:
+                    pwm[idx]=self.prev_pwms[idx]+aggression
+        self.prev_pwms=pwm
         return pwm,thrusts
+
 
 if __name__ == "__main__":
     try:

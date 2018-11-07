@@ -37,14 +37,18 @@ class PoseControllerNode():
         self.last_feedback_time = rospy.Time.now()
         self.enable_server = rospy.Service('~enable', SetBool, self.enable)
 
+
         self.pids = []
         for i in range(3):
-            self.pids.append(Pid(0.0, 0.0, 0.0,integral_min=-0.1,integral_max=0.1))
+            self.pids.append(Pid(0.0, 0.0, 0.0,integral_min=-10.0,integral_max=10.0))
             self.pids[i].setSetpoint(0.0)
 
         self.server = dynamic_reconfigure.server.Server(PoseControllerConfig, self.reconfigure)
         
         self.pub = rospy.Publisher('tau_com/DP', WrenchStamped,queue_size=1)
+        self.p_pub = rospy.Publisher('dp_components/P',WrenchStamped,queue_size=1)
+        self.i_pub = rospy.Publisher('dp_components/I',WrenchStamped,queue_size=1)
+        self.d_pub = rospy.Publisher('dp_components/D',WrenchStamped,queue_size=1)
         rospy.Subscriber('pose_com', PoseStamped, self.setpointCallback)
         
         period = rospy.rostime.Duration.from_sec(1.0/frequency)
@@ -80,14 +84,20 @@ class PoseControllerNode():
         self.pids[0].k_i = config['surge_Ki']
         self.pids[0].k_d = config['surge_Kd']
         self.pids[0].output_max = config['surge_max']
+        self.pids[0].__integral_min = -config['surge_imax']
+        self.pids[0].__integral_max = config['surge_imax']
         self.pids[1].k_p = config['sway_Kp']
         self.pids[1].k_i = config['sway_Ki']
         self.pids[1].k_d = config['sway_Kd']
         self.pids[1].output_max = config['sway_max']
+        self.pids[1].__integral_min = -config['sway_imax']
+        self.pids[1].__integral_max = config['sway_imax']
         self.pids[2].k_p = config['yaw_Kp']
         self.pids[2].k_i = config['yaw_Ki']
         self.pids[2].k_d = config['yaw_Kd']
         self.pids[2].output_max = config['yaw_max']
+        self.pids[2].__integral_min = -config['yaw_imax']
+        self.pids[2].__integral_max = config['yaw_imax']
         return config # Returns the updated configuration.
     
     def setpointCallback(self,setpoint):
@@ -138,6 +148,22 @@ class PoseControllerNode():
             wrench_output.header.stamp = rospy.Time.now()
             wrench_output.header.frame_id = 'DP'
             self.pub.publish(wrench_output)
+            
+            wrench_output.wrench.force.x = self.pids[0].P
+            wrench_output.wrench.force.y = self.pids[1].P
+            wrench_output.wrench.torque.z = self.pids[2].P
+            self.p_pub.publish(wrench_output)
+
+            wrench_output.wrench.force.x = self.pids[0].I
+            wrench_output.wrench.force.y = self.pids[1].I
+            wrench_output.wrench.torque.z = self.pids[2].I
+            self.i_pub.publish(wrench_output)
+
+            wrench_output.wrench.force.x = self.pids[0].D
+            wrench_output.wrench.force.y = self.pids[1].D
+            wrench_output.wrench.torque.z = self.pids[2].D
+            self.d_pub.publish(wrench_output)
+
 
 if __name__ == "__main__":
     rospy.init_node('dynamic_position')

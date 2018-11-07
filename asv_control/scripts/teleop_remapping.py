@@ -8,31 +8,61 @@ def interpolate(x,in_min,in_max,out_min,out_max):
 
 def joyCallback(msg,args):
     # map channel five of axis to commanded surge: +20:
-
+#0.5, 0.5, 0.49000000953674316, 0.49000000953674316
     # map channel four of axis to commanded yaw.
     outputMsg = WrenchStamped()
     outputMsg.header.frame_id="override"
     outputMsg.header.stamp = rospy.Time.now()
     # map positive X to forward motion
-    xorientation=-1
-    xcenter = xorientation*515
-    xmin=xorientation*1023
-    xmax=xorientation*0
-    x = xorientation*msg.axes[4]
-    if x<xcenter:
-        outputMsg.wrench.force.x = interpolate(x,xmin,xcenter,-20,0)
+    xreverse = True
+    xcenter = 0.49000000953674316
+    xmin=0
+    xmax=1.0
+    x = msg.axes[2]
+    if xreverse:
+        if x<xcenter:
+            outputMsg.wrench.force.x = interpolate(x,xcenter,xmin,0,100)
+        else:
+            outputMsg.wrench.force.x = interpolate(x,xmax,xcenter,-100,0)
     else:
-        outputMsg.wrench.force.x = interpolate(x,xcenter,xmax,0,20)
-    # map poistive Nz to CCW motion
-    zorientation=1
-    zcenter = zorientation*499
-    zmin=zorientation*0
-    zmax=zorientation*1023
-    z = zorientation*msg.axes[3]
-    if z<zcenter:
-        outputMsg.wrench.torque.z = interpolate(z,zmin,zcenter,-5,0)
+        if x<xcenter:
+            outputMsg.wrench.force.x = interpolate(x,xmin,xcenter,-100,0)
+        else:
+            outputMsg.wrench.force.x = interpolate(x,xcenter,xmax,0,100)
+
+    # map positive Y to port motion
+    yreverse = False
+    ycenter = 0.49000000953674316
+    ymin=0
+    ymax=1.0
+    y = msg.axes[3]
+    if yreverse:
+        if y<ycenter:
+            outputMsg.wrench.force.y = interpolate(y,ycenter,ymin,0,20)
+        else:
+            outputMsg.wrench.force.y = interpolate(y,ymax,ycenter,-20,0)
     else:
-        outputMsg.wrench.torque.z = interpolate(z,zcenter,zmax,0,5)
+        if y<ycenter:
+            outputMsg.wrench.force.y = interpolate(y,ymin,ycenter,-20,0)
+        else:
+            outputMsg.wrench.force.y = interpolate(y,ycenter,ymax,0,20)
+
+    # map positive Nz to CCW motion
+    zreverse = False
+    zcenter = 0.5
+    zmin=0
+    zmax=1.0
+    z = msg.axes[0]
+    if zreverse:
+        if z<zcenter:
+            outputMsg.wrench.torque.z = interpolate(z,zcenter,zmin,0,20)
+        else:
+            outputMsg.wrench.torque.z = interpolate(z,zmax,zcenter,-20,0)
+    else:
+        if y<ycenter:
+            outputMsg.wrench.torque.z = interpolate(z,zmin,zcenter,-20,0)
+        else:
+            outputMsg.wrench.torque.z = interpolate(z,zcenter,zmax,0,20)
     args.publish(outputMsg)
 
 def main():

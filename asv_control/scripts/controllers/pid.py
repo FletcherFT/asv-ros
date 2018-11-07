@@ -12,9 +12,14 @@ class Pid:
         self.k_p = k_p
         self.k_i = k_i
         self.k_d = k_d
+        self.P = 0
+        self.I = 0
+        self.D = 0
         self.output_max = output_max
         self.__setpoint = 0.0
+        self.__proportion = 0.0
         self.__integral = 0.0
+        self.__derivative = 0.0
         self.__previous_error = 0.0
         self.__integral_min = integral_min
         self.__integral_max = integral_max
@@ -36,7 +41,11 @@ class Pid:
         else:
             derivative = 0.0
         self.__previous_error = error
-        output = self.k_p * error + self.k_i * self.__integral + self.k_d * derivative
+        self.P = self.k_p * error
+        self.I = self.k_i * self.__integral
+        self.D = self.k_d * derivative
+        output = self.P + self.I + self.D
+
         #limit pid
         if not self.output_max is None:
             if output > self.output_max:

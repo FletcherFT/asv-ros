@@ -53,12 +53,21 @@ class guidance:
 
         self.resume = rospy.Service('guidance/resume', Trigger, self.handle_resume)
         self.utmrequest = rospy.Service('guidance/utmrequest', UTMService, self.handleUTMRequest)
+        self.holdcurrent = rospy.Service('guidance/hold', Trigger, self.handle_hold)
         # subscribers
         rospy.Subscriber("guidance/operator",PoseStamped,self.override_cb)
         rospy.Subscriber("guidance/task",GeoPoseStamped,self.task_cb)
         rospy.Subscriber("odometry/filtered",Odometry,self.measure_cb)
         # fidget spinner
         rospy.spin()
+
+    def handle_hold(self,req):
+        setpoint = PoseStamped()
+        setpoint.pose = self.pose_meas
+        setpoint.header.frame_id = "odom"
+        setpoint.header.stamp = rospy.Time.now()
+        self.override_cb(setpoint)
+
 
     def handleUTMRequest(self,req):
         self.odom2utm()
