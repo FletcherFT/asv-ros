@@ -1,6 +1,6 @@
 <launch>
 <!-- Objective: Get the Power Consumption of the Vehicle -->
-    <arg name="topics2log" default="/asv/status /control_topic_mux/selected /diagnostics /dp_components/D /dp_components/I /dp_components/P /energy/adc_raw /energy/aggregate /energy/power /failsafe/inrange /failsafe/shore /guidance/current /guidance/operator /guidance/setpoint /guidance/task /imu/data /joy /mission/markers /mission/plan /odometry/filtered /odometry/gps /rosout_agg /supervisor/recourse /supervisor/survival /tau_com/AP /tau_com/DP /tau_com/out /tau_com/override /tau_sol /tf /tf_static /thrusters /ublox_gps/filtered /ublox_gps/fix"/>
+    <arg name="topics2log" default="/asv/status /control_topic_mux/selected /diagnostics /dp_components/D /dp_components/I /dp_components/P /energy/adc_raw /energy/aggregate /energy/power /energy/battery /failsafe/inrange /failsafe/shore /guidance/current /guidance/operator /guidance/setpoint /guidance/task /imu/data /joy /mission/markers /mission/plan /odometry/filtered /odometry/gps /rosout_agg /supervisor/recourse /supervisor/survival /tau_com/AP /tau_com/DP /tau_com/out /tau_com/override /tau_sol /tf /tf_static /thrusters /ublox_gps/filtered /ublox_gps/fix"/>
     <arg name="topics2exclude" default=""/>
     <arg name="data_dir" default="/home/ubuntu/data_capture"/>
     <arg name="run_name" default="/flightdata"/>

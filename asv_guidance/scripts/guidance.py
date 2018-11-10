@@ -123,8 +123,8 @@ class guidance:
             rospy.logerr("{}: No TF between {} and odom!".format(rospy.get_name(),msg.header.frame_id))
 
     def task_cb(self,msg):
-        self.notified = False
         # in: GeoPoseStamped message
+        rospy.loginfo("{}: New Task Received.".format(rospy.get_name()))
         # CONVERT LAT, LONG TO UTM
         WGS84 = msg.pose.position
         # check to see if GeoPoseStamped is for hold position or waypoint following..
@@ -147,6 +147,7 @@ class guidance:
             self.update_goal(self.automate)
         else:
             rospy.logwarn("{}: Manual waypoint override in effect, call guidance/resume service to resume.".format(rospy.get_name()))
+        self.notified = False
 
     def odom2utm(self):
         if self.pose_meas is None:
