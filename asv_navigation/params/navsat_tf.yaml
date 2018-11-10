@@ -2,7 +2,8 @@
 # origin (datum) using this parameter. The fields in the parameter represent latitude and longitude in decimal degrees,
 # and heading in radians. As navsat_transform_node assumes an ENU standard, a 0 heading corresponds to east.
 #datum: [-41.401532, 147.120110, 0.0]  #SWANSON BUILDING REFERENCE
-datum: [-41.451993, 147.074446, 0.0] #LAKE TREVALLYN BASECAMP REFERENCE
+#datum: [-41.451993, 147.074446, 0.0] #LAKE TREVALLYN BASECAMP REFERENCE
+datum: [-41.431043, 147.188485, 0.0] #Waverley Lake Basecamp reference
 
 # Frequency of the main run loop
 frequency: 5

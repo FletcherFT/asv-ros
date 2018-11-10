@@ -5,7 +5,7 @@
 <arg name="env_path" default="/home/$(arg shoreside_user)/ROS_ws/src/asv_framework/asv_launch/envs/shoreside-env.sh"/>
 <arg name="rc_device" default="/dev/ttyUSB1"/>
 <machine name="shoreside" address="$(arg shoreside_hostname)" user="$(arg shoreside_user)" env-loader="$(arg env_path)"/>
-<node pkg="asv_failsafe" type="nano_rc.py" name="nano_rc">
+<node pkg="asv_failsafe" type="nano_rc.py" name="nano_rc" respawn="true">
     <param name="device" value="$(arg rc_device)"/>
 </node>
 <node pkg="asv_control" type="teleop_remapping.py" name="teleop_remapper"/>

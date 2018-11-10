@@ -62,12 +62,12 @@ class guidance:
         rospy.spin()
 
     def handle_hold(self,req):
+        self.manual = True
         setpoint = PoseStamped()
         setpoint.pose = self.pose_meas
         setpoint.header.frame_id = "odom"
         setpoint.header.stamp = rospy.Time.now()
         self.override_cb(setpoint)
-
 
     def handleUTMRequest(self,req):
         self.odom2utm()

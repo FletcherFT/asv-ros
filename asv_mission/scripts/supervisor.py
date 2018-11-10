@@ -24,11 +24,11 @@ class Supervisor:
         self.hptime = 0.0
         self._inrange = True
         self._energy_measured_sigma = rospy.get_param('~power_module_std',0.634184) # the standard deviation of the power module
-        self._task_soft_limit = rospy.get_param('~task_soft_limit',0.5) # the limit for the task survival function before replan is considered.
-        self._task_hard_limit = rospy.get_param('~task_hard_limit',0.4) # the limit for a task when a replan is triggered.
-        self._plan_soft_limit = rospy.get_param('~plan_soft_limit',0.5) # the limit for the plan survival function when a replan is triggered.
-        self._plan_hard_limit = rospy.get_param('~plan_hard_limit',0.4) # the limit for the vehicle survival function.
-        self._vehicle_soft_limit = rospy.get_param('~vehicle_soft_limit',0.55) # the cutoff for the vehicle before considering survival options.
+        self._task_soft_limit = rospy.get_param('~task_soft_limit',-0.1) # the limit for the task survival function before replan is considered.
+        self._task_hard_limit = rospy.get_param('~task_hard_limit',-0.1) # the limit for a task when a replan is triggered.
+        self._plan_soft_limit = rospy.get_param('~plan_soft_limit',-0.1) # the limit for the plan survival function when a replan is triggered.
+        self._plan_hard_limit = rospy.get_param('~plan_hard_limit',-0.1) # the limit for the vehicle survival function.
+        self._vehicle_soft_limit = rospy.get_param('~vehicle_soft_limit',-0.1) # the cutoff for the vehicle before considering survival options.
         self._battery_capacity = rospy.get_param('~battery_capacity',7*12*3600) # the energy capacity of the vehicle's battery system.
         self._battery_variance = rospy.get_param('~battery_variance',0.25*self._battery_capacity) # variance of the battery
         self._vehicle_nd = norm(self._battery_capacity,sqrt(self._battery_variance))
@@ -52,6 +52,7 @@ class Supervisor:
         self.pause = rospy.Service('supervisor/pause', SetBool, self.pausePlayCallback)
         self.start = rospy.Service('supervisor/start',Trigger,self.startPlanCallback)
         self.nexttask = rospy.Service('supervisor/request_new', Trigger, self.nextTaskCallback)
+        self.hold = rospy.Service('supervisor/hold',Trigger,self.holdPositionCallback)
 
         rospy.Subscriber("failsafe/inrange",Bool,self.rangeStateCallback)
         rospy.Subscriber("energy/aggregate",Float64Stamped,self.energySampleCallback)
@@ -118,8 +119,8 @@ class Supervisor:
                         rospy.sleep(rospy.Duration(0.01))
                     else:
                         # PLAN IS APPROACHING FAILURE, TIGHTEN TASK CONSTRAINTS
-                        tmp = self._task_soft_limit+0.1
-                        self._task_soft_limit = max(0.55,tmp)
+                        #tmp = self._task_soft_limit+0.1
+                        #self._task_soft_limit = max(0.55,tmp)
                         rospy.logwarn("Plan approaching failure, tightening task constraints.")
                 else:
                     # PLAN HAS FAILED, TRIGGER REPLAN.
@@ -141,7 +142,6 @@ class Supervisor:
                 rospy.logdebug(formatstring.format(survival_vehicle,survival_plan,survival_task)) 
                 
 
-
     def replanRecourse(self,fault):
         # Log the replan recourse action.
         self.recourse_pub.publish(fault)
@@ -158,6 +158,9 @@ class Supervisor:
                 flag = False
                 # check for in range
                 if self._inrange:
+                    # hold current position
+                    self.holdPositionCallback()
+                    self.mode = "recourse"
                     # get the current position of the vehicle
                     try:
                         rospy.wait_for_service('guidance/utmrequest',4.0)
@@ -425,6 +428,17 @@ class Supervisor:
             self.changeMode("__none")
             response = [True,"Mission paused."]
         return response
+
+    def holdPositionCallback(self,request):
+        self.mode="HOLD"
+        try:
+            rospy.wait_for_service("guidance/hold",4.0)
+        except:
+            response = [False, "No guidance/hold service"]
+        else:
+            service_handle = rospy.ServiceProxy("guidance/hold",Trigger)
+            return service_handle()
+
 
     def checkValidTask(self,task_msg):
         if task_msg.cost_mu > 0 and task_msg.action!='ROOT':

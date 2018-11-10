@@ -21,14 +21,14 @@ def joyCallback(msg,args):
     x = msg.axes[2]
     if xreverse:
         if x<xcenter:
-            outputMsg.wrench.force.x = interpolate(x,xcenter,xmin,0,100)
+            outputMsg.wrench.force.x = interpolate(x,xcenter,xmin,0,20)
         else:
-            outputMsg.wrench.force.x = interpolate(x,xmax,xcenter,-100,0)
+            outputMsg.wrench.force.x = interpolate(x,xmax,xcenter,-20,0)
     else:
         if x<xcenter:
-            outputMsg.wrench.force.x = interpolate(x,xmin,xcenter,-100,0)
+            outputMsg.wrench.force.x = interpolate(x,xmin,xcenter,-20,0)
         else:
-            outputMsg.wrench.force.x = interpolate(x,xcenter,xmax,0,100)
+            outputMsg.wrench.force.x = interpolate(x,xcenter,xmax,0,20)
 
     # map positive Y to port motion
     yreverse = False
@@ -55,14 +55,14 @@ def joyCallback(msg,args):
     z = msg.axes[0]
     if zreverse:
         if z<zcenter:
-            outputMsg.wrench.torque.z = interpolate(z,zcenter,zmin,0,20)
+            outputMsg.wrench.torque.z = interpolate(z,zcenter,zmin,0,40)
         else:
-            outputMsg.wrench.torque.z = interpolate(z,zmax,zcenter,-20,0)
+            outputMsg.wrench.torque.z = interpolate(z,zmax,zcenter,-40,0)
     else:
         if y<ycenter:
-            outputMsg.wrench.torque.z = interpolate(z,zmin,zcenter,-20,0)
+            outputMsg.wrench.torque.z = interpolate(z,zmin,zcenter,-40,0)
         else:
-            outputMsg.wrench.torque.z = interpolate(z,zcenter,zmax,0,20)
+            outputMsg.wrench.torque.z = interpolate(z,zcenter,zmax,0,40)
     args.publish(outputMsg)
 
 def main():
