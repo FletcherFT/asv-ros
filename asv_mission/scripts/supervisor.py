@@ -123,6 +123,7 @@ class Supervisor:
                 # PLAN SURVIVAL
                 # GET THE ENERGY CONSUMED SINCE MISSION START
                 self._plan_energy_measured_mu = self._energy_measured_total-self._plan_energy_datum
+                rospy.logdebug("Plan Energy Measured: {}\t Plan Energy Predicted: {}".format(self._plan_energy_measured_mu,self._plan_nd.mean()))
                 self._plan_energy_measured_std = self._energy_measured_std
                 plan_intersection_mu = self.intersection_mean(self._plan_nd.mean(),self._plan_energy_measured_mu,self._plan_nd.var(),self._plan_energy_measured_std**2)
                 self._plan_survival = self._plan_nd.sf(plan_intersection_mu)
