@@ -6,6 +6,7 @@ from pygeodesy import utm
 from geometry_msgs.msg import TransformStamped, PoseStamped, Vector3
 from geographic_msgs.msg import GeoPoseStamped
 from topic_tools.srv import MuxSelect
+from asv_messages.msg import Float64Stamped
 
 from nav_msgs.msg import Odometry
 from std_msgs.msg import ColorRGBA
@@ -30,6 +31,7 @@ class guidance:
         # Publishers
         self.marker_pub = rospy.Publisher("guidance/current",MarkerArray,queue_size=10)
         self.setpoint_pub = rospy.Publisher("guidance/setpoint",PoseStamped,queue_size=10)
+        self.percent_pub = rospy.Publisher("guidance/percent_remain",Float64Stamped,queue_size=1)
 
         # TF listeners
         self.tfBuffer = tf2_ros.Buffer()
@@ -40,6 +42,8 @@ class guidance:
         self.manual = True #switch for automated or manual override guidance
         self.notified = False #switch for notifying the operator/supervisor when the task is reached
         self.hp = False
+        self.new_datum = False # switch for deciding whether to take a new reference position for task completion
+        self.publish_percentage = False # switch for calculating/publishing the percentage complete
 
         # msg containers
         self.override = PoseStamped()
@@ -148,6 +152,7 @@ class guidance:
         else:
             rospy.logwarn("{}: Manual waypoint override in effect, call guidance/resume service to resume.".format(rospy.get_name()))
         self.notified = False
+        self.new_datum = True
 
     def odom2utm(self):
         if self.pose_meas is None:
@@ -194,6 +199,10 @@ class guidance:
     def measure_cb(self,msg):
         self.pose_meas = msg.pose.pose
         pose_meas = msg.pose.pose.position
+        if self.new_datum:
+            self.pose_datum = pose_meas
+            self.new_datum = False
+            self.publish_percentage = True
         orientation = msg.pose.pose.orientation
         yaw_meas = tf_conversions.transformations.euler_from_quaternion((orientation.x,orientation.y,orientation.z,orientation.w))[2]
 
@@ -207,6 +216,10 @@ class guidance:
             yaw_set = tf_conversions.transformations.euler_from_quaternion((orientation.x,orientation.y,orientation.z,orientation.w))[2]
 
         distance_error_measured = np.linalg.norm([pose_set.x-pose_meas.x,pose_set.y-pose_meas.y,pose_set.z-pose_meas.z])
+        if self.publish_percentage:
+            distance_done = np.linalg.norm([pose_meas.x-self.pose_datum.x,pose_meas.y-self.pose_datum.y,pose_meas.z-self.pose_datum.z])
+            self.percent_pub.publish( distance_error_measured/(distance_done+distance_error_measured) )
+
         yaw_error_measured = yaw_set-yaw_meas
         if yaw_error_measured > np.pi:
             yaw_error_measured-=2*np.pi
@@ -215,6 +228,7 @@ class guidance:
         rospy.logdebug("Distance error:{}\tYaw error:{}".format(distance_error_measured,yaw_error_measured))
         if self.manual and distance_error_measured<self.distance_error_acceptance:
             if not self.notified:
+                self.publish_percentage = False
                 rospy.loginfo("{}: Override waypoint reached, holding position.".format(rospy.get_name()))
                 try: 
                     rospy.wait_for_service("control_topic_mux/select",1.0)
@@ -230,6 +244,7 @@ class guidance:
                 if not self.notified:
                     rospy.loginfo("{}: Automated waypoint reached, requesting next point.".format(rospy.get_name()))
                     self.notified=True
+                    self.publish_percentage = False
                     self.request_new()
             elif self.hp and abs(yaw_error_measured)<self.yaw_error_acceptance and distance_error_measured<self.distance_error_acceptance:
                 if not self.notified:

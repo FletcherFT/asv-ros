@@ -27,6 +27,8 @@ class Hierarchy():
 
         self.plan = plan
         self._complete = []
+        self._skipped = []
+        self._checked = []
         self._todo = range(len(plan))
         self._root = root
         self._current = root
@@ -37,18 +39,24 @@ class Hierarchy():
 
     def taskDone(self):
         self._complete.append(self._current)
-        self._todo = [x for x in range(len(self.plan)) if x not in self._complete]
+        self._checked = self._complete+self._skipped
+        self._todo = [x for x in range(len(self.plan)) if x not in self._checked]
+
+    def skipTask(self):
+        self._skipped.append(self._current)
+        self._checked = self._complete+self._skipped
+        self._todo = [x for x in range(len(self.plan)) if x not in self._checked]
 
     def _findLowest(self):
         while True:
-            if self._current in self._complete:
+            if self._current in self._checked:
                 self._current = self.plan[self._current].parent
             children = self.plan[self._current].children
             # if there are children, see if any are incomplete
             if children:
                 flag = False # flag to determine if a child of the current is incomplete
                 for child in children:
-                    if not child in self._complete:
+                    if not child in self._checked:
                         self._current = child
                         flag = True
                         break
