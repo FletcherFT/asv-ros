@@ -25,14 +25,16 @@ class Supervisor:
         self.hptime = 0.0
         self._inrange = True
 
-        self._task_warn = rospy.get_param('~task_warn',0.6) # Threshold for when warnings are generated for the task.
-        self._task_limit = rospy.get_param('~task_limit',0.4) # the limit for the task survival function before recourse.
-        self._plan_warn = rospy.get_param('~plan_warn',-0.6) # Threshold for when warnings are generated for the plan.
-        self._plan_limit = rospy.get_param('~plan_limit',-0.4) # Threshold for the plan survival function before recourse.
+        self._task_warn = rospy.get_param('~task_warn',-0.55) # Threshold for when warnings are generated for the task.
+        self._task_limit = rospy.get_param('~task_limit',-0.52) # the limit for the task survival function before recourse.
+        self._plan_warn = rospy.get_param('~plan_warn',0.999) # Threshold for when warnings are generated for the plan.
+        self._plan_limit = rospy.get_param('~plan_limit',0.99) # Threshold for the plan survival function before recourse.
         self._battery_warn = rospy.get_param('~battery_warn',-0.6) # Threshold for when warnings are generated for the battery..
         self._battery_limit = rospy.get_param('~battery_limit',-0.5) # the limit of the battery before recourse.
-        self._voltage_warn = rospy.get_param('~voltage_warn',11.0) # Threshold for warning that the voltage is getting low.
-        self._voltage_limit = rospy.get_param('~voltage_limit',10.5) # Threshold for recourse due to low battery voltage.
+        self._voltage_warn = rospy.get_param('~voltage_warn',10.5) # Threshold for warning that the voltage is getting low.
+        self._voltage_limit = rospy.get_param('~voltage_limit',10.2) # Threshold for recourse due to low battery voltage.
+
+        self._timing_lock = False
 
         self._battery_energy_capacity = rospy.get_param('~battery_capacity',7*12*3600) # the energy capacity of the vehicle's battery system.
         self._battery_energy_variance = rospy.get_param('~battery_variance',0.25*self._battery_energy_capacity) # variance of the battery
@@ -53,6 +55,7 @@ class Supervisor:
         self._replan_flag = False
         self.aware = False
         self._emergency = False
+        self.start_flag = False
 
         rospy.init_node("supervisor")
         self.survival_pub = rospy.Publisher('supervisor/survival',Readings,queue_size=10)
@@ -67,18 +70,26 @@ class Supervisor:
 
         rospy.Subscriber("failsafe/inrange",Bool,self.rangeStateCallback)
         rospy.Subscriber("energy/aggregate",Readings,self.energySampleCallback)
-        rospy.Subscriber("energy/battery",BatteryState,self.batterySampleCallback)
+        rospy.Subscriber("throttled/battery",BatteryState,self.batterySampleCallback)
         rospy.Subscriber("mission/plan",Plan,self.receivePlanCallback)
         rospy.Subscriber("guidance/operator",PoseStamped,self.receiveOperatorCallback)
         rospy.Subscriber("guidance/percent_remain",Float64Stamped,self.receivePercentCallback)
         rospy.Subscriber("joy",Joy,self.receiveManualCallback)
+
+        rospy.loginfo("Supervisor Ready")
         rospy.spin()
     
     def intersection_mean(self,mu1,mu2,var1,var2):
         return var2*mu1/(var1+var2)+var1*mu2/(var1+var2)
 
     def batterySampleCallback(self,msg):
-        pass
+        if msg.voltage > self._voltage_warn:
+            pass
+        elif msg.voltage < self._voltage_limit:
+            rospy.logerr("Battery voltage below limit. Recourse.")
+            self.recourse(3)
+        else:
+            rospy.logwarn("Battery approaching voltage limit.")
 
     def receivePercentCallback(self,msg):
         self._percent_remain = msg.data
@@ -137,7 +148,7 @@ class Supervisor:
                     rospy.logwarn("Energy consumed for battery since startup approaching battery energy threshold.")
 
                 # PLAN SURVIVAL
-                if self._plan_survival > self._plan_warn:
+                if self._plan_survival > self._plan_warn and not self.start_flag:
                     # NO PLAN SURVIVAL ISSUE
                     pass
                 elif self._plan_survival < self._plan_limit:
@@ -149,7 +160,7 @@ class Supervisor:
                     rospy.logwarn("Energy consumed for plan approaching plan threshold.")
 
                 # TASK SURVIVAL
-                if self._task_survival > self._task_warn:
+                if self._task_survival > self._task_warn and not self.start_flag:
                     # NO TASK SURVIVAL ISSUE
                     pass
                 elif self._task_survival < self._task_limit:
@@ -176,7 +187,13 @@ class Supervisor:
             elif fault==1:
                 # Plan is wrong, so check if replanning is possible.
                 if self._inrange:
-                    self.holdPositionCallback(None)
+                    try:
+                        rospy.wait_for_service("guidance/hold",4.0)
+                    except:
+                        response = [False, "No guidance/hold service"]
+                    else:
+                        service_handle = rospy.ServiceProxy("guidance/hold",Trigger)
+                    service_handle()
                     self.mode = "recourse"
                     # get the current position of the vehicle
                     try:
@@ -216,23 +233,28 @@ class Supervisor:
 
                 else:
                     # vehicle not in range, decide whether to skip task or not.
-                    if self.skipOrSkipNot():
+                    if self.skipOrSkipNot() and not self._timing_lock:
                         rospy.logwarn("Plan fail, not in range, skipping task")
                         self.plan.skipTask()
                         self.mode="mission"
+                        self.updateMissionMarkers()
                         self.parseTask(self.plan.getTask())
                     else:
                         rospy.logwarn("Plan fail, not in range, not skipping task")
                         self.mode="mission"
+                self._timing_lock = False
             elif fault==2:
-                if self.skipOrSkipNot():
+                # DECIDE ON SKIPPING TASK OR NOT
+                if self.skipOrSkipNot() and not self._timing_lock:
                         rospy.logwarn("Task fail, skipping task")
                         self.plan.skipTask()
                         self.mode="mission"
+                        self.updateMissionMarkers()
                         self.parseTask(self.plan.getTask())
                 else:
                     rospy.logwarn("Task fail, not skipping task")
                     self.mode="mission"
+                self._timing_lock = False
 
             elif fault==3:
                 rospy.logfatal("Voltage Dropout")
@@ -246,20 +268,20 @@ class Supervisor:
     def skipOrSkipNot(self):
         # iteratively compare energy remaining
         todo = self.plan._todo
-        costs = self.plan.plan[todo].cost_mu
-        rewards = self.plan.plan[todo].reward
+        costs = [ self.plan.plan[x].cost_mu for x in todo]
         sorted_costs = sorted(costs)
-        sorted_todo = todo[np.argsort(costs)]
+        sorted_todo = [todo[x] for x in np.argsort(costs)] 
         viable = []
         e = 0
-        for idx,i in sorted_todo:
+        for idx,i in enumerate(sorted_todo):
             if self._task_energy_remaining < e:
                 break
             else:
                 e += sorted_costs[idx]
                 viable.append(i)
+        viable_rewards = [ self.plan.plan[x].reward for x in viable]
 
-        if sum(rewards[viable]) > self.plan.plan[self.plan._current].reward:
+        if sum(viable_rewards) > self.plan.plan[self.plan._current].reward:
             return True
         else:
             return False
@@ -299,6 +321,12 @@ class Supervisor:
         if self.aware:
             # if the task isn't the starting task.
             if task.action!='START':
+                # if the start task was completed, start referencing energy for the plan
+                if self.start_flag:
+                    self._plan_energy_measured_mu = 0 
+                    self._plan_energy_measured_std = self._energy_measured_std
+                    self._plan_energy_datum = self._energy_measured_total
+                    self.start_flag = False
                 # if the energy cost mu or std = 0, then this task is buggy.
                 if task.cost_mu==0 or task.cost_std ==0:
                     rospy.logwarn("Buggy task, skipping. {}".format(task))
@@ -354,6 +382,7 @@ class Supervisor:
                 geo_msg.pose.orientation = Quaternion(0,0,0,1)
                 self.task_pub.publish(geo_msg)
                 rospy.loginfo("Moving to starting waypoint of plan.")
+                self.start_flag = True
                 return [True,"AP mode to starting point."]
             else:
                 rospy.logerr("Couldn't configure to AP mode.")
@@ -388,17 +417,18 @@ class Supervisor:
 
     def receivePlanCallback(self,plan_msg):
         # parse the received Plan message
+        rospy.loginfo("{}: Got plan!".format("SUPERVISOR"))
         self.plan = hierarchy.Hierarchy(plan_msg)
         self.aware = plan_msg.aware
         self.home_task = self.plan.home
         root_task = self.plan.plan[self.plan._root]
         self._plan_nd = norm(root_task.cost_mu,root_task.cost_std)
+
         self.updateMissionMarkers()
         rospy.loginfo("Plan received, waiting for start mission service on {}".format(rospy.resolve_name("supervisor/start")))
         if self.mode == "recourse":
-            self.parseTask(self.plan.getTask())
-            self.mode = "mission"
             rospy.loginfo("Commencing plan with recourse!")
+            self.startPlanCallback(None)
 
     def updateMissionMarkers(self):
         array_msg = MarkerArray()
@@ -417,6 +447,8 @@ class Supervisor:
                 marker_msg.scale = Vector3(5,5,5)
                 if idx in self.plan._complete:
                     marker_msg.color = ColorRGBA(0,1,0,0.8) #GREEN
+                elif idx in self.plan._skipped:
+                    marker_msg.color = ColorRGBA(1.0,1.0,0,0.8) #YELLOW
                 else:
                     marker_msg.color = ColorRGBA(1,0,0,0.8) #RED
                 array_msg.markers.append(marker_msg)
@@ -425,6 +457,7 @@ class Supervisor:
     def nextTaskCallback(self,request):
         # new task requested from the guidance node.
         # if the vehicle is not in recourse mode
+        self._timing_lock = True
         if not self.mode=='recourse':
             if self.hptask:
                 rospy.loginfo("Pose reached, holding for {} seconds...".format(self.hptime))
@@ -487,6 +520,8 @@ class Supervisor:
 
     def startPlanCallback(self,request):
         # starting a new plan, so reset the energy counter
+        self._plan_energy_measured_mu = 0 
+        self._plan_energy_measured_std = self._energy_measured_std
         self._plan_energy_datum = self._energy_measured_total
         if self.plan is None:
             return [False,"No mission loaded"]

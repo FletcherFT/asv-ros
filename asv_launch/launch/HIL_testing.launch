@@ -18,8 +18,6 @@
     <include file="$(find asv_launch)/launch/bringup_comms.launch">
         <arg name="rc_device" value="$(arg rc_device)"/>
     </include>
-    <!-- BRINGUP HMI -->
-    <include file="$(find asv_launch)/launch/bringup_hmi.launch"/>
     <!-- BRINGUP GUIDANCE -->
     <include file="$(find asv_launch)/launch/bringup_guidance.launch"/>
     <!-- BRINGUP HIGH LEVEL CONTROL -->

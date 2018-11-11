@@ -4,4 +4,5 @@
         <rosparam command="load" file="$(find asv_energy)/params/BatteryInfo.yaml"/>
     </node>
     <node pkg="asv_energy" type="energy_monitor.py" name="energy_monitor" output="screen"/>
+    <node pkg="topic_tools" type="throttle" name="battery_throttle" output="screen" args="messages energy/battery 0.2 throttled/battery"/>
 </launch>

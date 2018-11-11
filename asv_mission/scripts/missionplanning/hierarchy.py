@@ -39,12 +39,12 @@ class Hierarchy():
 
     def taskDone(self):
         self._complete.append(self._current)
-        self._checked = self._complete+self._skipped
+        self._checked = sorted(self._complete+self._skipped)
         self._todo = [x for x in range(len(self.plan)) if x not in self._checked]
 
     def skipTask(self):
         self._skipped.append(self._current)
-        self._checked = self._complete+self._skipped
+        self._checked = sorted(self._complete+self._skipped)
         self._todo = [x for x in range(len(self.plan)) if x not in self._checked]
 
     def _findLowest(self):

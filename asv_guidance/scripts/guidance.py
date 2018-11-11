@@ -72,6 +72,7 @@ class guidance:
         setpoint.header.frame_id = "odom"
         setpoint.header.stamp = rospy.Time.now()
         self.override_cb(setpoint)
+        return [True,"Holding current postion and orientation."]
 
     def handleUTMRequest(self,req):
         self.odom2utm()
@@ -217,8 +218,11 @@ class guidance:
 
         distance_error_measured = np.linalg.norm([pose_set.x-pose_meas.x,pose_set.y-pose_meas.y,pose_set.z-pose_meas.z])
         if self.publish_percentage:
+            percent_msg = Float64Stamped()
             distance_done = np.linalg.norm([pose_meas.x-self.pose_datum.x,pose_meas.y-self.pose_datum.y,pose_meas.z-self.pose_datum.z])
-            self.percent_pub.publish( distance_error_measured/(distance_done+distance_error_measured) )
+            percent_msg.data = distance_error_measured/(distance_done+distance_error_measured)
+            percent_msg.header = msg.header
+            self.percent_pub.publish( percent_msg )
 
         yaw_error_measured = yaw_set-yaw_meas
         if yaw_error_measured > np.pi:
