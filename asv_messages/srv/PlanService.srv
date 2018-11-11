@@ -1,7 +1,9 @@
 # Service to request a new plan from the mission planner
 
 int8 fault # fault type
-int8[] complete # list of completed tasks
+int8[] completed # list of completed tasks
+int8[] skipped # list of skipped tasks
+float64 burned # value measured from energy/aggregator
 float64[] cost_mu # list of completed task energy measurements
 float64[] cost_std # list of completed task energy standard deviations
 float64 northing # Northing (utm) of vehicle's current position
