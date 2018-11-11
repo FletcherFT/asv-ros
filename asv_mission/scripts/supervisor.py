@@ -207,6 +207,7 @@ class Supervisor:
                     if response.success:
                         request = PlanServiceRequest()
                         request.fault = fault
+                        request.burned = self._energy_measured_total
                         request.northing = response.northing
                         request.easting = response.easting
                         request.latitude = response.latitude
@@ -214,6 +215,7 @@ class Supervisor:
                         request.cost_mu = self._completed_mu
                         request.cost_std = self._completed_std
                         request.complete = self.plan._complete 
+                        request.skipped = self.plan._skipped
                     else:
                         rospy.logerr("{} no utm position to use!".format(rospy.get_name))
 
