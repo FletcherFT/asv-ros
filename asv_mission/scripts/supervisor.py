@@ -214,7 +214,7 @@ class Supervisor:
                         request.longitude = response.longitude
                         request.cost_mu = self._completed_mu
                         request.cost_std = self._completed_std
-                        request.complete = self.plan._complete 
+                        request.completed = self.plan._complete 
                         request.skipped = self.plan._skipped
                     else:
                         rospy.logerr("{} no utm position to use!".format(rospy.get_name))
