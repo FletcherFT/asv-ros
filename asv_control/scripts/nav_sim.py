@@ -212,6 +212,7 @@ class NavSimNode():
         self._gps.position_covariance_type=3
 
         q = tf.transformations.quaternion_from_euler(0.0,0.0,self._eta[2][0])
+        q = tf.transformations.unit_vector(q)
         self._imu.orientation = Quaternion(*q)
         self._imu.orientation_covariance = [1e-9,1e-9,1e-9,1e-9,1e-9,1e-9,1e-9,1e-9,1e-9]
         self._imu.angular_velocity = Vector3(0,0,self._v[2])
