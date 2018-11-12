@@ -25,20 +25,20 @@ class Supervisor:
         self.hptime = 0.0
         self._inrange = True
 
-        self._task_warn = rospy.get_param('~task_warn',0.46) # Threshold for when warnings are generated for the task.
-        self._task_limit = rospy.get_param('~task_limit',0.45) # the limit for the task survival function before recourse.
-        self._plan_warn = rospy.get_param('~plan_warn',0.48) # Threshold for when warnings are generated for the plan.
-        self._plan_limit = rospy.get_param('~plan_limit',0.475) # Threshold for the plan survival function before recourse.
-        self._battery_warn = rospy.get_param('~battery_warn',0.51) # Threshold for when warnings are generated for the battery..
-        self._battery_limit = rospy.get_param('~battery_limit',0.5) # the limit of the battery before recourse.
-        self._voltage_warn = rospy.get_param('~voltage_warn',10.5) # Threshold for warning that the voltage is getting low.
-        self._voltage_limit = rospy.get_param('~voltage_limit',10.2) # Threshold for recourse due to low battery voltage.
+        self._task_warn = rospy.get_param('task_warn',0.46) # Threshold for when warnings are generated for the task.
+        self._task_limit = rospy.get_param('task_limit',0.45) # the limit for the task survival function before recourse.
+        self._plan_warn = rospy.get_param('plan_warn',0.48) # Threshold for when warnings are generated for the plan.
+        self._plan_limit = rospy.get_param('plan_limit',0.475) # Threshold for the plan survival function before recourse.
+        self._battery_warn = rospy.get_param('battery_warn',0.51) # Threshold for when warnings are generated for the battery..
+        self._battery_limit = rospy.get_param('battery_limit',0.5) # the limit of the battery before recourse.
+        self._voltage_warn = rospy.get_param('voltage_warn',10.5) # Threshold for warning that the voltage is getting low.
+        self._voltage_limit = rospy.get_param('voltage_limit',10.2) # Threshold for recourse due to low battery voltage.
 
         self._timing_lock = False
         self._replan_lock = False
 
-        self._battery_energy_capacity = rospy.get_param('~battery_capacity',7*12*3600) # the energy capacity of the vehicle's battery system.
-        self._battery_energy_variance = rospy.get_param('~battery_variance',0.25*self._battery_energy_capacity) # variance of the battery
+        self._battery_energy_capacity = rospy.get_param('battery_capacity',7*12*3600) # the energy capacity of the vehicle's battery system.
+        self._battery_energy_variance = rospy.get_param('battery_variance',0.25*self._battery_energy_capacity) # variance of the battery
         self._battery_energy_remaining = self._battery_energy_capacity
         self._percent_remain = 1.0
 

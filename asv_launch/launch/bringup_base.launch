@@ -12,8 +12,9 @@
         <arg name="rc_device" value="$(arg rc_device)"/>
     </include>
     <!-- BRINGUP HIGH LEVEL CONTROL -->
+    <rosparam command="load" file="$(find asv_mission)/params/supervisor.yaml"/>
     <node pkg="asv_mission" type="supervisor.py" name="supervisor" output="screen">
-        <rosparam command="load" file="$(find asv_mission)/params/supervisor.yaml"/>
+        
     </node>
     <!-- BRINGUP THE ENERGY MODULES -->
     <include file="$(find asv_energy)/launch/power_systems.launch"/>
