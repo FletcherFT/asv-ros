@@ -15,6 +15,6 @@
     <node pkg="asv_mission" type="supervisor.py" name="supervisor" output="screen">
         <rosparam command="load" file="$(find asv_mission)/params/supervisor.yaml"/>
     </node>
-    <!-- BRINUPG THE ENERGY MODULES -->
+    <!-- BRINGUP THE ENERGY MODULES -->
     <include file="$(find asv_energy)/launch/power_systems.launch"/>
 </launch>

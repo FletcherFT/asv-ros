@@ -1,10 +1,12 @@
-{hotel_load_mean: 23.784714,
-power_module_std: 0.634184,
-task_soft_limit: -0.1,
-task_hard_limit: -0.1, # the limit for a task when a replan is triggered.
-plan_soft_limit: -0.1, # the limit for the plan survival function when a replan is triggered.
-plan_hard_limit: -0.1, # the limit for the vehicle survival function.
-vehicle_soft_limit: -0.1,
+{
+task_warn: 0.51,
+task_limit: 0.49, # the limit for a task when a replan is triggered.
+plan_warn: 0.62, # the limit for the plan survival function when a replan is triggered.
+plan_limit: 0.6, # the limit for the vehicle survival function.
+battery_warn: 0.87,
+battery_limit: 0.85,
+voltage_warn: 10.5,
+voltage_limit: 10.2,
 battery_capacity: 302400,
 battery_variance: 75600
 }
