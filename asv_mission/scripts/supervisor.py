@@ -25,12 +25,12 @@ class Supervisor:
         self.hptime = 0.0
         self._inrange = True
 
-        self._task_warn = rospy.get_param('~task_warn',-0.55) # Threshold for when warnings are generated for the task.
-        self._task_limit = rospy.get_param('~task_limit',-0.52) # the limit for the task survival function before recourse.
-        self._plan_warn = rospy.get_param('~plan_warn',0.999) # Threshold for when warnings are generated for the plan.
-        self._plan_limit = rospy.get_param('~plan_limit',0.99) # Threshold for the plan survival function before recourse.
-        self._battery_warn = rospy.get_param('~battery_warn',-0.6) # Threshold for when warnings are generated for the battery..
-        self._battery_limit = rospy.get_param('~battery_limit',-0.5) # the limit of the battery before recourse.
+        self._task_warn = rospy.get_param('~task_warn',0.46) # Threshold for when warnings are generated for the task.
+        self._task_limit = rospy.get_param('~task_limit',0.45) # the limit for the task survival function before recourse.
+        self._plan_warn = rospy.get_param('~plan_warn',0.48) # Threshold for when warnings are generated for the plan.
+        self._plan_limit = rospy.get_param('~plan_limit',0.475) # Threshold for the plan survival function before recourse.
+        self._battery_warn = rospy.get_param('~battery_warn',0.51) # Threshold for when warnings are generated for the battery..
+        self._battery_limit = rospy.get_param('~battery_limit',0.5) # the limit of the battery before recourse.
         self._voltage_warn = rospy.get_param('~voltage_warn',10.5) # Threshold for warning that the voltage is getting low.
         self._voltage_limit = rospy.get_param('~voltage_limit',10.2) # Threshold for recourse due to low battery voltage.
 
@@ -208,7 +208,7 @@ class Supervisor:
                     if response.success:
                         request = PlanServiceRequest()
                         request.fault = fault
-                        request.burned = self._energy_measured_total
+                        request.burned = self._plan_energy_measured_mu
                         request.northing = response.northing
                         request.easting = response.easting
                         request.latitude = response.latitude
@@ -220,19 +220,24 @@ class Supervisor:
                     else:
                         rospy.logerr("{} no utm position to use!".format(rospy.get_name))
 
-                    flag = False
-                    while not flag:
-                        try:
-                            rospy.wait_for_service('mission/recourse',5.0)
-                        except:
-                            rospy.logerr("No mission/recourse service... is MATLAB running? Trying again in 5 s")
-                            flag = False
-                            rospy.sleep(5.0)
+                    try:
+                        rospy.wait_for_service('mission/recourse',5.0)
+                    except:
+                        rospy.logerr("No mission/recourse service... is MATLAB running? Trying again in 5 s")
+                        # vehicle not in range, decide whether to skip task or not.
+                        if self.skipOrSkipNot() and not self._timing_lock:
+                            rospy.logwarn("Plan fail, not in range, skipping task")
+                            self.plan.skipTask()
+                            self.mode="mission"
+                            self.updateMissionMarkers()
+                            self.parseTask(self.plan.getTask())
                         else:
-                            service_handle = rospy.ServiceProxy("mission/recourse",PlanService)
-                            response = service_handle(request)
-                            flag = True
-                    rospy.loginfo("{} Recourse Plan Requested.".format(rospy.get_name()))
+                            rospy.logwarn("Plan fail, not in range, not skipping task")
+                            self.mode="mission"
+                    else:
+                        service_handle = rospy.ServiceProxy("mission/recourse",PlanService)
+                        response = service_handle(request)
+                        rospy.loginfo("{} Recourse Plan Requested.".format(rospy.get_name()))
 
                 else:
                     # vehicle not in range, decide whether to skip task or not.
