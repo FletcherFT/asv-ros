@@ -7,6 +7,7 @@ from asv_messages.srv import ConfigureSteppers
 def selectCallback(msg):
     token=msg.data.split("/")[-1]
     if token=="AP":
+        rospy.loginfo("Got AP")
         # disable DP controller
         try:
             rospy.wait_for_service('dynamic_position/enable',15.0)
