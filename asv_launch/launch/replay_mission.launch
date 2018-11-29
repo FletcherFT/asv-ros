@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<launch>
+<!-- need to replay: 
+tf, 
+tf_static, 
+odometry/filtered, 
+energy aggregate, 
+energy adc_raw,
+energy power,
+failsafe/inrange,
+guidance operator,
+mission plan,
+-->
+<arg name="bag_path" default="/home/fft/Dropbox/PhD/Experiments/ASV_Experiments/Waverley_Trials/Tuesday_13_11_18/midsize_final_7_2018-11-13-16-25-39_0.bag"/>
+<arg name="SIL" value="true"/>
+<!-- need to make a node that triggers supervisor/start at time=1542086798.223 s-->
+<param name="use_sim_time" value="true"/>
+<!-- bringup the hmi -->
+<node pkg="rviz" type="rviz" name="rviz" args="-d /home/fft/ROS_ws/src/asv_framework/asv_launch/rviz/mission.rviz">
+		<remap from="move_base_simple/goal" to="guidance/operator"/>
+		<remap from="initialpose" to="set_pose"/>
+</node>
+
+<node pkg="rosbag" type="play" name="replay_node" args="$(arg bag_path) -r 5 --clock --pause --topics /ublox_gps/filtered /tf /tf_static /odometry/filtered /energy/aggregate /energy/adc_raw /energy/battery /energy/power /failsafe/in_range /guidance/operator /mission/plan" output="screen" launch-prefix="xterm -e"/>
+
+<!-- we need to run the following nodes so that the supervisor has no service errors -->
+<node name="supervisor_start_service_caller" type="supervisor_start_sync.py" pkg="asv_launch"/>
+<!-- bringup the guidance node -->
+<node pkg="asv_guidance" type="guidance.py" name="guidance_node"/>
+<!-- bringup the hardware level nodes -->
+
+<rosparam command="load" file="$(find asv_control)/params/thrustersAP.yaml"/>
+<rosparam command="load" file="$(find asv_control)/params/thrustersDP.yaml"/>
+<rosparam command="load" file="$(find asv_control)/params/motor_config.yaml"/>
+<node pkg="asv_control" type="ardudriver.py" name="ardudriver">
+    <param name="test" value="$(arg SIL)"/>
+</node>
+<node pkg="asv_control" type="constrained_fixed_allocation.py" name="allocator"/>
+<node pkg="topic_tools" type="mux" name="control_topic_mux" args="tau_com/out tau_com/override tau_com/AP tau_com/DP">
+    <remap from="mux" to="control_topic_mux"/>
+</node>
+<!-- bringup the low level control nodes -->
+<node pkg="asv_control" type="controlmanager.py" name="controlmanager">
+    <remap from="mux/select" to="control_topic_mux/selected"/>
+</node>
+<node pkg="asv_control" type="autopilot.py" name="autopilot">
+    <remap from="pose_com" to="guidance/setpoint"/>
+    <rosparam command="load" file="$(find asv_control)/params/ap_pid_settings.yaml"/>
+</node>
+<node pkg="asv_control" type="dynamic_positioning.py" name="dynamic_position">
+    <remap from="pose_com" to="guidance/setpoint"/>
+    <rosparam command="load" file="$(find asv_control)/params/dp_pid_settings.yaml"/>
+</node>
+<rosparam command="load" file="$(find asv_mission)/params/supervisor.yaml"/>
+<node pkg="asv_mission" type="supervisor.py" name="supervisor" output="screen"/>
+
+
+</launch>
