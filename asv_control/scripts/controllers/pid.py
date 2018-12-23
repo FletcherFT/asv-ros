@@ -16,6 +16,7 @@ class Pid:
         self.I = 0
         self.D = 0
         self.output_max = output_max
+        self.__error = 0.0
         self.__setpoint = 0.0
         self.__proportion = 0.0
         self.__integral = 0.0
@@ -31,6 +32,7 @@ class Pid:
         The integral part is limited to integral_max and integral_min
         """
         error = self.__setpoint - feedback_value
+        self.__error = error
         self.__integral = self.__integral + error * dt
         if self.__integral > self.__integral_max:
             self.__integral = self.__integral_max

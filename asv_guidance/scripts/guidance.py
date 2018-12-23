@@ -10,7 +10,7 @@ from asv_messages.msg import Float64Stamped
 
 from nav_msgs.msg import Odometry
 from std_msgs.msg import ColorRGBA
-from std_srvs.srv import Trigger
+from std_srvs.srv import Trigger, TriggerResponse
 from asv_messages.srv import UTMService, UTMServiceResponse
 from visualization_msgs.msg import Marker, MarkerArray
 
@@ -93,13 +93,16 @@ class guidance:
             return [False,0,0]
 
     def handle_resume(self,req):
+        response = TriggerResponse()
         if self.manual:
             self.manual=False
-            res = [True,"Waypoint override disabled, resuming current waypoint."]
+            response.success = True
+            response.message = "Waypoint override disabled, resuming current waypoint."
             self.update_goal(self.automate)
         else:
-            res = [False,"Waypoint override already disabled!"]
-        return res
+            response.success = True
+            response.message = "Waypoint override already disabled!"
+        return response
 
     def request_new(self):
         # Service to call for new way point
@@ -111,7 +114,7 @@ class guidance:
             return
         new_waypoint_req = rospy.ServiceProxy('supervisor/request_new', Trigger)
         try:
-          resp = new_waypoint_req()
+            resp = new_waypoint_req()
         except rospy.ServiceException as exc:
             rospy.logerr("Service did not process request: {}".format(str(exc)))
             self.notified=False
