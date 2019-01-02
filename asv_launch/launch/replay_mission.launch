@@ -24,8 +24,8 @@ mission plan,
 		<remap from="move_base_simple/goal" to="guidance/operator"/>
 		<remap from="initialpose" to="set_pose"/>
 </node>
-
-<node pkg="rosbag" type="play" name="replay_node" args="/asv/status:=/test/status $(arg bag_path) -r 5 --clock --pause --topics /asv/status /ublox_gps/filtered /tf /tf_static /odometry/filtered /energy/adc_raw /energy/battery /failsafe/in_range /guidance/operator /mission/plan" output="screen" launch-prefix="xterm -e" required="True"/>
+<!-- launch-prefix="xterm -e" -->
+<node pkg="rosbag" type="play" name="replay_node" args="/asv/status:=/test/status $(arg bag_path) -r 5 --clock --pause --topics /asv/status /ublox_gps/filtered /tf /tf_static /odometry/filtered /energy/adc_raw /energy/battery /failsafe/in_range /guidance/operator /mission/plan" output="screen"  required="True"/>
 <node pkg="rosbag" type="record" name="record_node" args="-O $(arg bag_output) -a -x /test/status"/>
 <!-- we need to run the following nodes so that the supervisor has no service errors -->
 <node name="supervisor_start_service_caller" type="supervisor_start_sync.py" pkg="asv_launch" output="screen"/>
