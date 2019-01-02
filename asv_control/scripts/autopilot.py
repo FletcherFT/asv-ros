@@ -7,7 +7,7 @@ from controllers.pid import Pid
 from geometry_msgs.msg import WrenchStamped
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
-from asv_messages import Float64Stamped
+from asv_messages.msg import Float64Stamped, Readings
 from math import pi, atan2
 import numpy as np
 mul=np.matmul
@@ -51,8 +51,10 @@ class Autopilot():
             self.pids.append(Pid(0.0, 0.0, 0.0,integral_min=-2.0,integral_max=2.0))
         self.server = dynamic_reconfigure.server.Server(AutopilotConfig, self.reconfigure)
         self.pub = rospy.Publisher('tau_com/AP',WrenchStamped,queue_size=10)
-        self.u_pub = rospy.Publisher('u_error',Float64Stamped,queue_size=10)
-        self.psi_pub = rospy.Publisher('psi_error',Float64Stamped,queue_size=10)
+        self.p_pub = rospy.Publisher('ap_components/P',WrenchStamped,queue_size=1)
+        self.i_pub = rospy.Publisher('ap_components/I',WrenchStamped,queue_size=1)
+        self.d_pub = rospy.Publisher('ap_components/D',WrenchStamped,queue_size=1)
+        self.error_pub = rospy.Publisher('ap_components/error',Readings,queue_size=1)
         period = rospy.Duration.from_sec(1.0/frequency)
         self.timer = rospy.Timer(period,self.updateOutput)
         rospy.Subscriber('pose_com',PoseStamped,self.setpointCallback)
@@ -172,8 +174,6 @@ class Autopilot():
     def updateOutput(self, event):
         if self.setpoint_valid and self.enabled:
             wrench_output = WrenchStamped()
-            u_output = Float64Stamped()
-            psi_output = Float64Stamped()
             if self.isFeedbackValid():
                 dt = (event.current_real - event.last_real).to_sec()
                 wrench_output.wrench.force.x = self.pids[0].update(self.last_feedback[0], dt)
@@ -193,14 +193,24 @@ class Autopilot():
             wrench_output.header.stamp = rospy.Time.now()
             wrench_output.header.frame_id = 'AP'
             self.pub.publish(wrench_output)
-            u_output.header.stamp = rospy.Time.now()
-            u_output.header.frame_id = 'AP'
-            psi_output.header.stamp = rospy.Time.now()
-            psi_output.header.frame_id = 'AP'
-            u_output.data = self.pids[0].__error
-            psi_output.data = self.pids[1].__error
-            self.u_pub.publish(u_output)
-            self.psi_pub.publish(psi_output)
+            error_msg = Readings()
+            error_msg.header.stamp = rospy.Time.now()
+            error_msg.header.frame_id = '[U,Psi]'
+            error_msg.data = [self.pids[0].error,self.pids[1].error]
+            self.error_pub.publish(error_msg)
+            
+            wrench_output.wrench.force.y = 0
+            wrench_output.wrench.force.x = self.pids[0].P
+            wrench_output.wrench.torque.z = self.pids[1].P
+            self.p_pub.publish(wrench_output)
+
+            wrench_output.wrench.force.x = self.pids[0].I
+            wrench_output.wrench.torque.z = self.pids[1].I
+            self.i_pub.publish(wrench_output)
+
+            wrench_output.wrench.force.x = self.pids[0].D
+            wrench_output.wrench.torque.z = self.pids[1].D
+            self.d_pub.publish(wrench_output)
 
 if __name__ == "__main__":
     try:

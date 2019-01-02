@@ -2,6 +2,7 @@
 import rospy
 import dynamic_reconfigure.server
 from asv_control.cfg import PoseControllerConfig
+from asv_messages.msg import Readings
 from std_srvs.srv import SetBool
 import tf2_ros
 from tf_conversions import transformations as transform
@@ -49,6 +50,7 @@ class PoseControllerNode():
         self.p_pub = rospy.Publisher('dp_components/P',WrenchStamped,queue_size=1)
         self.i_pub = rospy.Publisher('dp_components/I',WrenchStamped,queue_size=1)
         self.d_pub = rospy.Publisher('dp_components/D',WrenchStamped,queue_size=1)
+        self.error_pub = rospy.Publisher('dp_components/error',Readings,queue_size=1)
         rospy.Subscriber('pose_com', PoseStamped, self.setpointCallback)
         
         period = rospy.rostime.Duration.from_sec(1.0/frequency)
@@ -149,6 +151,12 @@ class PoseControllerNode():
             wrench_output.header.frame_id = 'DP'
             self.pub.publish(wrench_output)
             
+            error_msg = Readings()
+            error_msg.header.stamp = rospy.Time.now()
+            error_msg.header.frame_id = '[x,y,Psi]'
+            error_msg.data = [self.pids[0].error,self.pids[1].error,self.pids[2].error]
+            self.error_pub.publish(error_msg)
+
             wrench_output.wrench.force.x = self.pids[0].P
             wrench_output.wrench.force.y = self.pids[1].P
             wrench_output.wrench.torque.z = self.pids[2].P

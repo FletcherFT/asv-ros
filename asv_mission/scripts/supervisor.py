@@ -118,83 +118,86 @@ class Supervisor:
         self._battery_survival = self._battery_nd.sf(battery_intersection_mu)
 
         # IF THE VEHICLE IS CURRENTLY IN A MISSION, DO THE FOLLOWING
-        # if self.mode == "mission":
-        # UPDATE THE ENERGY USED FOR THE CURRENT TASK
-        # GET THE CONSUMED ENERGY FOR THE TASK
-        self._task_energy_measured_mu = self._energy_measured_total-self._task_energy_datum
-        self._task_energy_measured_std = self._energy_measured_std - self._task_energy_std_datum
-        # UPDATE THE ENERGY USED FOR THE CURRENT PLAN
-        # GET THE CONSUMED ENERGY FOR THE PLAN
-        self._plan_energy_measured_mu = self._energy_measured_total-self._plan_energy_datum
-        self._plan_energy_measured_std = self._energy_measured_std-self._plan_energy_std_datum
+        if self.mode == "mission":
+            # UPDATE THE ENERGY USED FOR THE CURRENT TASK
+            # GET THE CONSUMED ENERGY FOR THE TASK
+            self._task_energy_measured_mu = self._energy_measured_total-self._task_energy_datum
+            self._task_energy_measured_std = self._energy_measured_std - self._task_energy_std_datum
+            # UPDATE THE ENERGY USED FOR THE CURRENT PLAN
+            # GET THE CONSUMED ENERGY FOR THE PLAN
+            self._plan_energy_measured_mu = self._energy_measured_total-self._plan_energy_datum
+            self._plan_energy_measured_std = self._energy_measured_std-self._plan_energy_std_datum
 
-        energy_msg = Readings()
-        energy_msg.header.frame_id = "[battery,plan,task]"
-        energy_msg.header.stamp = msg.header.stamp
-        energy_msg.data = [self._energy_measured_total,self._energy_measured_std,self._plan_energy_measured_mu,self._plan_energy_measured_std,self._task_energy_measured_mu,self._task_energy_measured_std]
-        self.energy_pub.publish(energy_msg)
+            energy_msg = Readings()
+            energy_msg.header.frame_id = "[battery,plan,task]"
+            energy_msg.header.stamp = msg.header.stamp
+            energy_msg.data = [self._energy_measured_total,self._energy_measured_std,self._plan_energy_measured_mu,self._plan_energy_measured_std,self._task_energy_measured_mu,self._task_energy_measured_std]
+            self.energy_pub.publish(energy_msg)
 
-        # IF THERE ARE TASK AND PLAN DISTRIBUTIONS (DECLARED WHEN PLAN STARTED)
-        if not self._task_nd is None and not self._plan_nd is None:
-            # GET THE SURVIVAL FUNCTION OF THE TASK
-            # The intersection probability density function mean is
-            task_intersection_mu = self.intersection_mean(self._task_nd.mean(),self._task_energy_measured_mu,self._task_nd.var(),self._task_energy_measured_std**2)
-            # The cumulative probability that the energy consumed for current task is the energy predicted for the task is:
-            self._task_survival = self._task_nd.sf(task_intersection_mu)
-            # PREDICT THE ENERGY REMAINING FOR THE CURRENT TASK
-            self._task_energy_remaining = self._task_energy_measured_mu * (1 + self._percent_remain)
-            
-            # The intersection probability density function mean is
-            plan_intersection_mu = self.intersection_mean(self._plan_nd.mean(),self._plan_energy_measured_mu,self._plan_nd.var(),self._plan_energy_measured_std**2)
-            # The cumulative proability that the energy consumed for current task is the energy predicted for the task is:
-            self._plan_survival = self._plan_nd.sf(plan_intersection_mu)
+            # IF THERE ARE TASK AND PLAN DISTRIBUTIONS (DECLARED WHEN PLAN STARTED)
+            if not self._task_nd is None and not self._plan_nd is None and not self._start_flag:
+                # GET THE SURVIVAL FUNCTION OF THE TASK
+                # The intersection probability density function mean is
+                task_intersection_mu = self.intersection_mean(self._task_nd.mean(),self._task_energy_measured_mu,self._task_nd.var(),self._task_energy_measured_std**2)
+                # The cumulative probability that the energy consumed for current task is the energy predicted for the task is:
+                self._task_survival = self._task_nd.sf(task_intersection_mu)
+                # PREDICT THE ENERGY REMAINING FOR THE CURRENT TASK
+                self._task_energy_remaining = self._task_energy_measured_mu * (1 + self._percent_remain)
+                
+                # The intersection probability density function mean is
+                plan_intersection_mu = self.intersection_mean(self._plan_nd.mean(),self._plan_energy_measured_mu,self._plan_nd.var(),self._plan_energy_measured_std**2)
+                # The cumulative proability that the energy consumed for current task is the energy predicted for the task is:
+                self._plan_survival = self._plan_nd.sf(plan_intersection_mu)
 
-            # PUBLISH THE SURVIVAL FUNCTIONS
-            survival_msg = Readings()
-            survival_msg.header.frame_id="[battery,plan,task]"
-            survival_msg.header.stamp = msg.header.stamp
-            survival_msg.data = [self._battery_survival,self._plan_survival,self._task_survival]
-            self.survival_pub.publish(msg)
+                # PUBLISH THE SURVIVAL FUNCTIONS
+                survival_msg = Readings()
+                survival_msg.header.frame_id="[battery,plan,task]"
+                survival_msg.header.stamp = msg.header.stamp
+                survival_msg.data = [self._battery_survival,self._plan_survival,self._task_survival]
+                self.survival_pub.publish(msg)
 
-            # ASSESS THE SURVIVAL FUNCTIONS OF THE BATTERY, PLAN, AND TASK IN THAT PRIORITY
-            # BATTERY SURVIVAL
-            if self._battery_survival > self._battery_warn:
-                # NO BATTERY SURVIVAL ISSUE
+                # ASSESS THE SURVIVAL FUNCTIONS OF THE BATTERY, PLAN, AND TASK IN THAT PRIORITY
+                # BATTERY SURVIVAL
+                if self._battery_survival > self._battery_warn:
+                    # NO BATTERY SURVIVAL ISSUE
+                    pass
+                elif self._battery_survival < self._battery_limit:
+                    # BATTERY SURVIVAL LIMIT CROSSED, TIME FOR RECOURSE
+                    rospy.logerr("Energy consumed for battery crossed battery threshold, recourse initiated.")
+                    self.recourse(0)
+                else:
+                    # BATTERY SURVIVAL WARN LIMIT CROSSED, LOG WARNING
+                    rospy.logwarn("Energy consumed for battery since startup approaching battery energy threshold.")
+
+                # make sure the vehicle is not moving to the starting point of the plan and that it's not waiting for a new plan.
+                if not self._start_flag and not self._replan_flag:
+                    # PLAN SURVIVAL
+                    if self._plan_survival > self._plan_warn:
+                        # NO PLAN SURVIVAL ISSUE
+                        pass
+                    elif self._plan_survival < self._plan_limit:
+                        # PLAN SURVIVAL LIMIT CROSSED, TIME FOR RECOURSE
+                        rospy.logerr("Energy consumed for plan crossed plan threshold, recourse initiated.")
+                        self.recourse(1)
+                    else:
+                        # PLAN SURVIVAL WARN LIMIT CROSSED, LOG WARNING
+                        rospy.logwarn("Energy consumed for plan approaching plan threshold.")
+                    # TASK SURVIVAL
+                    if self._task_survival > self._task_warn:
+                        # NO TASK SURVIVAL ISSUE
+                        pass
+                    elif self._task_survival < self._task_limit:
+                        rospy.logerr("Energy consumed for task crossed task threshold, recourse initiated.")
+                        self.recourse(2)
+                    else:
+                        rospy.logwarn("Energy consumed for task approaching task threshold.")
+            # if the vehicle doesn't have a task or plan prediction and it has started a mission
+            elif self._task_nd is None and not self._start_flag:
+                rospy.logerr("No Task Distribution?")
+            elif self._plan_nd is None and not self._start_flag:
+                rospy.logerr("No Plan Distribution?")
+            elif self._start_flag:
                 pass
-            elif self._battery_survival < self._battery_limit:
-                # BATTERY SURVIVAL LIMIT CROSSED, TIME FOR RECOURSE
-                rospy.logerr("Energy consumed for battery crossed battery threshold, recourse initiated.")
-                self.recourse(0)
-            else:
-                # BATTERY SURVIVAL WARN LIMIT CROSSED, LOG WARNING
-                rospy.logwarn("Energy consumed for battery since startup approaching battery energy threshold.")
-
-            # make sure the vehicle is not moving to the starting point of the plan and that it's not waiting for a new plan.
-            if not self._start_flag and not self._replan_flag:
-                # PLAN SURVIVAL
-                if self._plan_survival > self._plan_warn:
-                    # NO PLAN SURVIVAL ISSUE
-                    pass
-                elif self._plan_survival < self._plan_limit:
-                    # PLAN SURVIVAL LIMIT CROSSED, TIME FOR RECOURSE
-                    rospy.logerr("Energy consumed for plan crossed plan threshold, recourse initiated.")
-                    self.recourse(1)
-                else:
-                    # PLAN SURVIVAL WARN LIMIT CROSSED, LOG WARNING
-                    rospy.logwarn("Energy consumed for plan approaching plan threshold.")
-
-                # TASK SURVIVAL
-                if self._task_survival > self._task_warn:
-                    # NO TASK SURVIVAL ISSUE
-                    pass
-                elif self._task_survival < self._task_limit:
-                    rospy.logerr("Energy consumed for task crossed task threshold, recourse initiated.")
-                    self.recourse(2)
-                else:
-                    rospy.logwarn("Energy consumed for task approaching task threshold.")
-        # if the vehicle doesn't have a task or plan prediction and it has started a mission
-        elif self._task_nd is None and not self._plan_nd is None and not self._start_flag:
-            rospy.logerr("No Plan and Task Distributions?")
             
 
     def recourse(self,fault):
@@ -475,7 +478,7 @@ class Supervisor:
         geo_msg = GeoPoseStamped()
         geo_msg.header.frame_id="utm"
         geo_msg.header.stamp = rospy.Time.now()
-        #self.checkValidTask(task)
+        self.checkValidTask(task)
         # Look at the action property and decide on what to do from there:
         if task.action == "WP":
             # waypoint task, configure for AP mode to a GPS waypoint.
