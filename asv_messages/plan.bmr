@@ -1,0 +1,38 @@
+class update_asv_messages_Task_25986b24b195f3fff267e51c5c6f0abc(MessageUpdateRule):
+	old_type = "asv_messages/Task"
+	old_full_text = """
+# Container for holding tasks
+int32 parent
+int32[] children
+float64 cost_mu
+float64 cost_std
+string action
+float64[] data
+"""
+
+	new_type = "asv_messages/Task"
+	new_full_text = """
+# Container for holding tasks
+int32 parent
+int32[] children
+float64 cost_mu
+float64 cost_std
+float64 reward
+string action
+float64[] data
+"""
+
+	order = 0
+	migrated_types = []
+
+	valid = True
+
+	def update(self, old_msg, new_msg):
+		new_msg.parent = old_msg.parent
+		new_msg.children = old_msg.children
+		new_msg.cost_mu = old_msg.cost_mu
+		new_msg.cost_std = old_msg.cost_std
+		#No matching field name in old message
+		new_msg.reward = 1.0
+		new_msg.action = old_msg.action
+		new_msg.data = old_msg.data

@@ -17,7 +17,8 @@
   <exec_depend>message_runtime</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>std_msgs</exec_depend>
-
-
-  <export></export>
+  <exec_depend>rosbag_migration_rule</exec_depend>
+  <export>
+    <rosbag migration_rule_file="plan.bmr"/>
+  </export>
 </package>
