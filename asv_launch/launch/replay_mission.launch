@@ -12,23 +12,27 @@ guidance operator,
 mission plan,
 -->
 <arg name="bag_path" default="/home/fft/Dropbox/PhD/Experiments/ASV_Experiments/Waverley_Trials/Tuesday_13_11_18/midsize_final_7_2018-11-13-16-25-39_0.bag"/>
+<arg name="bag_output" default="/home/fft/Dropbox/PhD/Experiments/ASV_Experiments/Waverley_Trials/Reconstructions/Redone_midsize_final_7_2018-11-13-16-25-39_0"/>
 <arg name="SIL" value="true"/>
+<arg name="viz" default="true"/>
+<arg name="sup_param" default="$(find asv_mission)/params/supervisor.yaml"/>
+
 <!-- need to make a node that triggers supervisor/start at time=1542086798.223 s-->
 <param name="use_sim_time" value="true"/>
 <!-- bringup the hmi -->
-<node pkg="rviz" type="rviz" name="rviz" args="-d /home/fft/ROS_ws/src/asv_framework/asv_launch/rviz/mission.rviz">
+<node if="$(arg viz)" pkg="rviz" type="rviz" name="rviz" args="-d /home/fft/ROS_ws/src/asv_framework/asv_launch/rviz/mission.rviz">
 		<remap from="move_base_simple/goal" to="guidance/operator"/>
 		<remap from="initialpose" to="set_pose"/>
 </node>
 
-<node pkg="rosbag" type="play" name="replay_node" args="$(arg bag_path) -r 5 --clock --pause --topics /ublox_gps/filtered /tf /tf_static /odometry/filtered /energy/aggregate /energy/adc_raw /energy/battery /energy/power /failsafe/in_range /guidance/operator /mission/plan" output="screen" launch-prefix="xterm -e"/>
-
+<node pkg="rosbag" type="play" name="replay_node" args="/asv/status:=/test/status $(arg bag_path) -r 5 --clock --pause --topics /asv/status /ublox_gps/filtered /tf /tf_static /odometry/filtered /energy/adc_raw /energy/battery /failsafe/in_range /guidance/operator /mission/plan" output="screen" launch-prefix="xterm -e" required="True"/>
+<node pkg="rosbag" type="record" name="record_node" args="-O $(arg bag_output) -a -x /test/status"/>
 <!-- we need to run the following nodes so that the supervisor has no service errors -->
-<node name="supervisor_start_service_caller" type="supervisor_start_sync.py" pkg="asv_launch"/>
+<node name="supervisor_start_service_caller" type="supervisor_start_sync.py" pkg="asv_launch" output="screen"/>
 <!-- bringup the guidance node -->
 <node pkg="asv_guidance" type="guidance.py" name="guidance_node"/>
-<!-- bringup the hardware level nodes -->
 
+<!-- bringup the hardware level nodes -->
 <rosparam command="load" file="$(find asv_control)/params/thrustersAP.yaml"/>
 <rosparam command="load" file="$(find asv_control)/params/thrustersDP.yaml"/>
 <rosparam command="load" file="$(find asv_control)/params/motor_config.yaml"/>
@@ -53,6 +57,6 @@ mission plan,
 </node>
 <rosparam command="load" file="$(find asv_mission)/params/supervisor.yaml"/>
 <node pkg="asv_mission" type="supervisor.py" name="supervisor" output="screen"/>
-
+<node pkg="asv_energy" type="energy_monitor.py" name="energy_monitor"/>
 
 </launch>

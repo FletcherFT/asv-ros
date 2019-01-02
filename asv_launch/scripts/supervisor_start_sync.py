@@ -2,14 +2,17 @@
 import rospy
 from std_srvs.srv import Trigger
 from asv_messages.srv import PlanService, PlanServiceResponse
+from std_msgs.msg import String
 
 def main():
     rospy.init_node("fake_supervisor_service_caller")
     rospy.Service('mission/recourse', PlanService, planCallback)
-    flag = False
-    while not rospy.is_shutdown():
-        if rospy.get_time() > 1542086798.2 and not flag:
-            flag = callSupervisor()
+    rospy.Subscriber('test/status', String, statusCallback)
+    rospy.spin()
+
+def statusCallback(msg):
+    if msg.data == "ASV currently in mode: mission":
+        callSupervisor()
 
 def planCallback(request):
     response = PlanServiceResponse()
