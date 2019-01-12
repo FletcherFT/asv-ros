@@ -12,6 +12,7 @@ guidance operator,
 mission plan,
 -->
 <arg name="bag_path" default="/home/fft/Dropbox/PhD/Experiments/ASV_Experiments/Waverley_Trials/Tuesday_13_11_18/midsize_final_7_2018-11-13-16-25-39_0.bag"/>
+<arg name="bag_output" default="/home/fft/Dropbox/PhD/Experiments/ASV_Experiments/Waverley_Trials/Reconstructions/Redone_midsize_final_7_2018-11-13-16-25-39_0"/>
 <arg name="SIL" value="true"/>
 <arg name="viz" default="true"/>
 <arg name="sup_param" default="$(find asv_mission)/params/supervisor.yaml"/>
@@ -24,7 +25,8 @@ mission plan,
 		<remap from="initialpose" to="set_pose"/>
 </node>
 <!-- launch-prefix="xterm -e" -->
-<node pkg="rosbag" type="play" name="replay_node" args="/asv/status:=/test/status $(arg bag_path) --clock --topics /asv/status /ublox_gps/fix /ublox_gps/filtered /tf /tf_static /odometry/filtered /energy/adc_raw /energy/battery /failsafe/in_range /guidance/operator /mission/plan /thrusters" output="screen" required="True"/>
+<node pkg="rosbag" type="play" name="replay_node" args="/asv/status:=/test/status $(arg bag_path) --clock --topics /asv/status /ublox_gps/filtered /tf /tf_static /odometry/filtered /energy/adc_raw /energy/battery /failsafe/in_range /guidance/operator /mission/plan /thrusters" output="screen" required="True"/>
+<node pkg="rosbag" type="record" name="record_node" args="-O $(arg bag_output) -a -x /test/.*"/>
 <!-- we need to run the following nodes so that the supervisor has no service errors -->
 <node name="supervisor_start_service_caller" type="supervisor_start_sync.py" pkg="asv_launch" output="screen"/>
 <!-- bringup the guidance node -->

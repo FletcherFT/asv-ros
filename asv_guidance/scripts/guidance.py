@@ -6,13 +6,15 @@ from pygeodesy import utm
 from geometry_msgs.msg import TransformStamped, PoseStamped, Vector3
 from geographic_msgs.msg import GeoPoseStamped
 from topic_tools.srv import MuxSelect
-from asv_messages.msg import Float64Stamped
+from asv_messages.msg import Float64Stamped, Readings
 
 from nav_msgs.msg import Odometry
 from std_msgs.msg import ColorRGBA
 from std_srvs.srv import Trigger, TriggerResponse
 from asv_messages.srv import UTMService, UTMServiceResponse
 from visualization_msgs.msg import Marker, MarkerArray
+
+from math import atan2
 
 import tf2_ros
 import tf_conversions
@@ -32,6 +34,7 @@ class guidance:
         self.marker_pub = rospy.Publisher("guidance/current",MarkerArray,queue_size=10)
         self.setpoint_pub = rospy.Publisher("guidance/setpoint",PoseStamped,queue_size=10)
         self.percent_pub = rospy.Publisher("guidance/percent_remain",Float64Stamped,queue_size=1)
+        self.guidance_error_pub = rospy.Publisher("guidance/error",Readings,queue_size=10)
 
         # TF listeners
         self.tfBuffer = tf2_ros.Buffer()
@@ -67,6 +70,7 @@ class guidance:
 
     def handle_hold(self,req):
         self.manual = True
+        self.hp = True
         setpoint = PoseStamped()
         setpoint.pose = self.pose_meas
         setpoint.header.frame_id = "odom"
@@ -201,6 +205,9 @@ class guidance:
         self.marker_pub.publish(array_msg)
 
     def measure_cb(self,msg):
+        guidance_error_msg = Readings()
+        guidance_error_msg.header.frame_id = "relative"
+        guidance_error_msg.header.stamp = rospy.Time.now()
         self.pose_meas = msg.pose.pose
         pose_meas = msg.pose.pose.position
         if self.new_datum:
@@ -232,6 +239,22 @@ class guidance:
             yaw_error_measured-=2*np.pi
         elif yaw_error_measured < -np.pi:
             yaw_error_measured+=2*np.pi
+
+        dE = pose_set.x-pose_meas.x
+        dN = pose_set.y-pose_meas.y
+        psi = atan2(dN,dE)
+        los_error_measured = psi-yaw_meas
+        if los_error_measured > np.pi:
+            los_error_measured-=2*np.pi
+        elif los_error_measured < -np.pi:
+            los_error_measured+=2*np.pi
+
+
+        if not self.hp:
+            guidance_error_msg.data = [distance_error_measured,los_error_measured]
+        else:
+            guidance_error_msg.data = [distance_error_measured,yaw_error_measured]
+        self.guidance_error_pub.publish(guidance_error_msg)
         rospy.logdebug("Distance error:{}\tYaw error:{}".format(distance_error_measured,yaw_error_measured))
         if self.manual and distance_error_measured<self.distance_error_acceptance:
             if not self.notified:
